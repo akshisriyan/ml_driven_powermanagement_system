@@ -4,34 +4,25 @@ import { Activity, Zap, Home, TrendingUp } from 'lucide-react';
 const StatusCard = ({ title, value, unit, icon: Icon, trend, status }) => {
   const getStatusColor = () => {
     switch (status) {
-      case 'good': return 'text-success-600 bg-success-50 border-success-200';
-      case 'warning': return 'text-warning-600 bg-warning-50 border-warning-200';
-      case 'danger': return 'text-danger-600 bg-danger-50 border-danger-200';
-      default: return 'text-primary-600 bg-primary-50 border-primary-200';
+      case 'good': return 'text-green-600';
+      case 'warning': return 'text-orange-600';
+      case 'danger': return 'text-red-600';
+      default: return 'text-blue-600';
     }
   };
 
   const getTrendColor = () => {
-    if (trend > 0) return 'text-success-600';
-    if (trend < 0) return 'text-danger-600';
-    return 'text-gray-600';
+    if (trend > 0) return 'text-green-600';
+    if (trend < 0) return 'text-red-600';
+    return 'text-blue-600';
   };
 
   return (
-    <div className={`p-6 rounded-lg border-2 ${getStatusColor()} transition-all duration-200 hover:shadow-lg`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Icon className="w-8 h-8" />
-          <div>
-            <p className="text-sm font-medium opacity-75">{title}</p>
-            <p className="text-2xl font-bold">
-              {typeof value === 'number' ? value.toLocaleString() : value}
-              {unit && <span className="text-lg ml-1">{unit}</span>}
-            </p>
-          </div>
-        </div>
+    <div className="metric-card fade-in-up">
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px'}}>
+        <Icon className={`w-8 h-8 ${getStatusColor()}`} />
         {trend !== undefined && (
-          <div className={`flex items-center ${getTrendColor()}`}>
+          <div style={{display: 'flex', alignItems: 'center'}} className={getTrendColor()}>
             <TrendingUp className={`w-4 h-4 mr-1 ${trend < 0 ? 'transform rotate-180' : ''}`} />
             <span className="text-sm font-medium">
               {Math.abs(trend).toFixed(1)}%
@@ -39,6 +30,11 @@ const StatusCard = ({ title, value, unit, icon: Icon, trend, status }) => {
           </div>
         )}
       </div>
+      <div className="metric-label">{title}</div>
+      <div className="metric-value">
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </div>
+      <div className="status-unit">{unit}</div>
     </div>
   );
 };

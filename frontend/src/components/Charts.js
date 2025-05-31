@@ -18,8 +18,8 @@ import {
 } from 'recharts';
 
 const ChartContainer = ({ title, children, className = "" }) => (
-  <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
-    <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
+  <div className={`metric-card ${className}`}>
+    <h3 className="text-lg font-semibold text-white mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{title}</h3>
     <div className="h-80">
       {children}
     </div>
@@ -59,14 +59,26 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="tick" />
           <YAxis />
-          <Tooltip formatter={(value) => [`${value.toFixed(1)} V`, 'Voltage']} />
-          <Area 
+          <Tooltip formatter={(value) => [`${value.toFixed(1)} V`, 'Voltage']} 
+            contentStyle={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #667eea',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(102, 126, 234, 0.2)'
+            }}
+          />          <Area 
             type="monotone" 
             dataKey="voltage" 
-            stroke="#3b82f6" 
-            fill="#3b82f6" 
-            fillOpacity={0.3}
+            stroke="#667eea" 
+            fill="url(#voltageGradient)" 
+            fillOpacity={0.8}
           />
+          <defs>
+            <linearGradient id="voltageGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#667eea" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#764ba2" stopOpacity={0.2}/>
+            </linearGradient>
+          </defs>
         </AreaChart>
       </ResponsiveContainer>
     </ChartContainer>
@@ -81,23 +93,31 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
           <XAxis dataKey="tick" />
           <YAxis yAxisId="left" />
           <YAxis yAxisId="right" orientation="right" />
-          <Tooltip />
-          <Legend />
-          <Line 
+          <Tooltip 
+            contentStyle={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #667eea',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(102, 126, 234, 0.2)'
+            }}
+          />
+          <Legend />          <Line 
             yAxisId="left"
             type="monotone" 
             dataKey="load" 
-            stroke="#ef4444" 
-            strokeWidth={2}
+            stroke="#667eea" 
+            strokeWidth={3}
             name="Load (kW)"
+            dot={{ fill: '#667eea', strokeWidth: 2, r: 4 }}
           />
           <Line 
             yAxisId="right"
             type="monotone" 
             dataKey="houses" 
-            stroke="#22c55e" 
-            strokeWidth={2}
+            stroke="#764ba2" 
+            strokeWidth={3}
             name="House Count"
+            dot={{ fill: '#764ba2', strokeWidth: 2, r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -118,10 +138,21 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
           <BarChart data={forecastChartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="step" />
-            <YAxis />
-            <Tooltip formatter={(value) => [`${value?.toFixed(1)} kW`, 'Predicted Load']} />
-            <Bar dataKey="forecast" fill="#f59e0b" />
-            {forecastChartData[0]?.current && (
+            <YAxis />            <Tooltip formatter={(value) => [`${value?.toFixed(1)} kW`, 'Predicted Load']} 
+              contentStyle={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid #667eea',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+              }}
+            />
+            <Bar dataKey="forecast" fill="url(#forecastGradient)" />
+            <defs>
+              <linearGradient id="forecastGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#667eea" stopOpacity={0.9}/>
+                <stop offset="95%" stopColor="#764ba2" stopOpacity={0.6}/>
+              </linearGradient>
+            </defs>            {forecastChartData[0]?.current && (
               <Bar dataKey="current" fill="#22c55e" />
             )}
           </BarChart>
@@ -129,14 +160,13 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
       </ChartContainer>
     );
   };
-
   // Power distribution pie chart
   const PowerDistributionChart = () => {
     const distributionData = [
-      { name: 'Residential', value: 60, color: '#3b82f6' },
-      { name: 'Commercial', value: 25, color: '#ef4444' },
-      { name: 'Industrial', value: 10, color: '#f59e0b' },
-      { name: 'Others', value: 5, color: '#22c55e' },
+      { name: 'Residential', value: 60, color: '#667eea' },
+      { name: 'Commercial', value: 25, color: '#764ba2' },
+      { name: 'Industrial', value: 10, color: '#3b82f6' },
+      { name: 'Others', value: 5, color: '#6366f1' },
     ];
 
     return (
@@ -155,7 +185,14 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => [`${value}%`, 'Share']} />
+            <Tooltip formatter={(value) => [`${value}%`, 'Share']}
+              contentStyle={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid #667eea',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(102, 126, 234, 0.2)'
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
       </ChartContainer>

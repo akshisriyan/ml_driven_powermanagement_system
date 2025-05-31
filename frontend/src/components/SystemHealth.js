@@ -8,31 +8,31 @@ const HealthIndicator = ({ status, label, value, unit = "" }) => {
       case 'good':
         return {
           icon: ShieldCheck,
-          color: 'text-success-600',
-          bgColor: 'bg-success-50',
-          borderColor: 'border-success-200'
+          color: 'text-green-400',
+          bgColor: 'bg-green-500/20',
+          borderColor: 'border-green-500/30'
         };
       case 'warning':
         return {
           icon: ShieldAlert,
-          color: 'text-warning-600',
-          bgColor: 'bg-warning-50',
-          borderColor: 'border-warning-200'
+          color: 'text-yellow-400',
+          bgColor: 'bg-yellow-500/20',
+          borderColor: 'border-yellow-500/30'
         };
       case 'critical':
       case 'danger':
         return {
           icon: ShieldX,
-          color: 'text-danger-600',
-          bgColor: 'bg-danger-50',
-          borderColor: 'border-danger-200'
+          color: 'text-red-400',
+          bgColor: 'bg-red-500/20',
+          borderColor: 'border-red-500/30'
         };
       default:
         return {
           icon: Shield,
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200'
+          color: 'text-blue-400',
+          bgColor: 'bg-blue-500/20',
+          borderColor: 'border-blue-500/30'
         };
     }
   };
@@ -41,11 +41,11 @@ const HealthIndicator = ({ status, label, value, unit = "" }) => {
   const Icon = config.icon;
 
   return (
-    <div className={`p-4 rounded-lg border ${config.borderColor} ${config.bgColor}`}>
+    <div className={`metric-card p-4 rounded-lg border backdrop-blur-md ${config.borderColor} ${config.bgColor}`}>
       <div className="flex items-center space-x-3">
         <Icon className={`w-5 h-5 ${config.color}`} />
         <div>
-          <p className="text-sm font-medium text-gray-700">{label}</p>
+          <p className="text-sm font-medium text-gray-200">{label}</p>
           <p className={`text-lg font-bold ${config.color}`}>
             {typeof value === 'number' ? value.toLocaleString() : value}
             {unit && <span className="text-sm ml-1">{unit}</span>}
@@ -59,19 +59,19 @@ const HealthIndicator = ({ status, label, value, unit = "" }) => {
 const SystemHealth = ({ healthData, loading }) => {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="metric-card">
         <div className="flex items-center space-x-2 mb-4">
-          <Activity className="w-5 h-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-800">System Health</h3>
+          <Activity className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Health</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="p-4 rounded-lg border border-gray-200 animate-pulse">
+            <div key={i} className="metric-card p-4 rounded-lg animate-pulse">
               <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                <div className="w-5 h-5 bg-blue-300/30 rounded"></div>
                 <div>
-                  <div className="h-4 bg-gray-300 rounded w-20 mb-1"></div>
-                  <div className="h-5 bg-gray-300 rounded w-16"></div>
+                  <div className="h-4 bg-blue-300/30 rounded w-20 mb-1"></div>
+                  <div className="h-5 bg-blue-300/30 rounded w-16"></div>
                 </div>
               </div>
             </div>
@@ -83,14 +83,14 @@ const SystemHealth = ({ healthData, loading }) => {
 
   if (!healthData) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="metric-card">
         <div className="flex items-center space-x-2 mb-4">
-          <Activity className="w-5 h-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-800">System Health</h3>
+          <Activity className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Health</h3>
         </div>
         <div className="text-center py-8">
           <ShieldX className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-          <p className="text-gray-500">No health data available</p>
+          <p className="text-gray-300">No health data available</p>
         </div>
       </div>
     );
@@ -105,13 +105,13 @@ const SystemHealth = ({ healthData, loading }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="metric-card">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
-          <Activity className="w-5 h-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-800">System Health</h3>
+          <Activity className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Health</h3>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-300">
           {healthData.timestamp && (
             <>Updated: {new Date(healthData.timestamp).toLocaleTimeString()}</>
           )}
@@ -165,23 +165,23 @@ const SystemHealth = ({ healthData, loading }) => {
       </div>
 
       {/* System Recommendations */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h4 className="text-sm font-medium text-gray-800 mb-2">System Recommendations</h4>
-        <div className="space-y-1 text-xs text-gray-600">
+      <div className="mt-6 metric-card">
+        <h4 className="text-sm font-medium text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Recommendations</h4>
+        <div className="space-y-1 text-xs text-gray-300">
           {healthData.status === 'healthy' && (
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-success-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
               <span>All systems operating within normal parameters</span>
             </div>
           )}
           {healthData.status === 'warning' && (
             <>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-warning-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                 <span>Monitor voltage levels closely</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-warning-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                 <span>Consider load balancing adjustments</span>
               </div>
             </>
@@ -189,11 +189,11 @@ const SystemHealth = ({ healthData, loading }) => {
           {healthData.status === 'critical' && (
             <>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-danger-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
                 <span>Immediate attention required</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-danger-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
                 <span>Check grid stability</span>
               </div>
             </>

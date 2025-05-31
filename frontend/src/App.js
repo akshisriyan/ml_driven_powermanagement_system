@@ -120,37 +120,39 @@ function App() {
 
     return () => clearInterval(interval);
   }, [fetchGridStatus, fetchForecastData, fetchSystemHealth, isRefreshing, loading]);
-
   return (
     <ErrorBoundary>
       {loading ? (
         <LoadingScreen message="Initializing power grid dashboard..." />
       ) : (
-        <div className="min-h-screen bg-gray-50">
-          <Header 
-            onRefresh={refreshData}
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-          />
+        <div className="App">
+          <div className="dashboard-content">
+            <div className="dashboard-header">
+              <h1>⚡ ML-Driven Power Grid Management</h1>
+              <p>Real-time monitoring and intelligent power distribution</p>
+            </div>
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            <Header 
+              onRefresh={refreshData}
+              lastUpdated={lastUpdated}
+              isRefreshing={isRefreshing}
+            />
+
             {/* Error Banner */}
             {error && (
-              <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 text-danger-600">⚠️</div>
-                  <span className="text-danger-700">{error}</span>
+              <div className="error fade-in-up">
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <span>⚠️</span>
+                  <span>{error}</span>
                 </div>
               </div>
-            )}
-
-            {/* Grid Status Cards */}
+            )}            {/* Grid Status Cards */}
             <GridStatus gridData={gridData} loading={isRefreshing} />
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Charts (2/3 width) */}
-              <div className="lg:col-span-2">
+            <div className="controls-section">
+              {/* Left Column - Charts */}
+              <div>
                 <Charts 
                   gridData={gridData}
                   forecastData={forecastData}
@@ -159,8 +161,8 @@ function App() {
                 />
               </div>
 
-              {/* Right Column - Controls and System Health (1/3 width) */}
-              <div className="space-y-6">
+              {/* Right Column - Controls and System Health */}
+              <div>
                 <SimulationControls 
                   onRunSimulation={runSimulation}
                   loading={isRefreshing}
@@ -173,13 +175,11 @@ function App() {
             </div>
 
             {/* Model Predictions - Full Width */}
-            <div className="mt-8">
-              <ModelPredictions 
-                forecastData={forecastData}
-                loading={isRefreshing}
-              />
-            </div>
-          </main>
+            <ModelPredictions 
+              forecastData={forecastData}
+              loading={isRefreshing}
+            />
+          </div>
         </div>
       )}
     </ErrorBoundary>
