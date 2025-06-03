@@ -32,7 +32,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
       <div className="space-y-6">        {/* Parameter Controls */}
         <div>
           <label htmlFor="growth-rate" className="block text-sm font-medium text-gray-200 mb-2">
-            House Growth Rate
+            Usage Growth Rate
           </label>
           <div className="flex items-center space-x-4">
             <input
@@ -50,7 +50,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
             </span>
           </div>
           <p className="text-xs text-gray-300 mt-1">
-            Controls how fast new houses are added to the grid
+            Controls how fast new Users are added to the grid
           </p>
         </div>
 
