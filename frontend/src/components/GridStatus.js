@@ -120,7 +120,7 @@ const GridStatus = ({ gridData, loading }) => {
         trend={-1.2}
       />
       <StatusCard
-        title="House Count"
+        title="Usage Count"
         value={gridData.house_count || 0}
         icon={Home}
         status="good"

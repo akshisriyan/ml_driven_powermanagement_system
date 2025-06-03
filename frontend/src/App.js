@@ -130,6 +130,7 @@ function App() {
             <div className="dashboard-header">
               <h1>⚡ ML-Driven Power Grid Management</h1>
               <p>Real-time monitoring and intelligent power distribution</p>
+              <h1>NSBM Green University</h1>
             </div>
 
             <Header 

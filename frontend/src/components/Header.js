@@ -17,6 +17,7 @@ const Header = ({ onRefresh, lastUpdated, isRefreshing }) => {
               <p className="text-sm text-gray-300">
                 Real-time monitoring and predictive analytics dashboard
               </p>
+              
             </div>
           </div>
 

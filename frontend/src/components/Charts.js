@@ -86,7 +86,7 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
 
   // Load and House Count chart
   const LoadHouseChart = () => (
-    <ChartContainer title="Load vs House Count">
+    <ChartContainer title="Load vs Usage Count">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={histData}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -116,7 +116,7 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
             dataKey="houses" 
             stroke="#764ba2" 
             strokeWidth={3}
-            name="House Count"
+            name="Users Count"
             dot={{ fill: '#764ba2', strokeWidth: 2, r: 4 }}
           />
         </LineChart>
@@ -163,14 +163,14 @@ const Charts = ({ gridData, forecastData, historicalData }) => {
   // Power distribution pie chart
   const PowerDistributionChart = () => {
     const distributionData = [
-      { name: 'Residential', value: 60, color: '#667eea' },
-      { name: 'Commercial', value: 25, color: '#764ba2' },
-      { name: 'Industrial', value: 10, color: '#3b82f6' },
-      { name: 'Others', value: 5, color: '#6366f1' },
+      { name: 'Admin', value: 60, color: '#667eea' },
+      { name: 'FOC', value: 25, color: '#764ba2' },
+      { name: 'FOE', value: 10, color: '#3b82f6' },
+      { name: 'FOB', value: 5, color: '#6366f1' },
     ];
 
     return (
-      <ChartContainer title="Power Distribution by Sector">
+      <ChartContainer title="Power Distribution by Sector (NSBM)">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
