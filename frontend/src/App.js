@@ -1,4 +1,4 @@
-<<<<<<< Updated upstream
+
 import React, { useState, useEffect, useCallback } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingScreen } from './components/Loading';
@@ -189,5 +189,3 @@ function App() {
 }
 
 export default App;
-=======
->>>>>>> Stashed changes
