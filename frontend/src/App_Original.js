@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import React, { useState, useEffect, useCallback } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingScreen } from './components/Loading';
@@ -131,7 +130,6 @@ function App() {
             <div className="dashboard-header">
               <h1>⚡ ML-Driven Power Grid Management</h1>
               <p>Real-time monitoring and intelligent power distribution</p>
-              <h1>NSBM Green University</h1>
             </div>
 
             <Header 
@@ -189,5 +187,3 @@ function App() {
 }
 
 export default App;
-=======
->>>>>>> Stashed changes

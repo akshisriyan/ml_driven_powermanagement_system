@@ -55,23 +55,29 @@ const HealthIndicator = ({ status, label, value, unit = "" }) => {
     </div>
   );
 };
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SystemHealth = ({ healthData, loading }) => {
   if (loading) {
     return (
       <div className="metric-card">
-        <div className="health-header">
-          <Activity className="health-title-icon" />
-          <h3 className="health-title">System Health</h3>
+        <div className="flex items-center space-x-2 mb-4">
+          <Activity className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Health</h3>
         </div>
-        <div className="health-grid">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="health-loading">
-              <div className="loading-content">
-                <div className="loading-icon"></div>
+            <div key={i} className="metric-card p-4 rounded-lg animate-pulse">
+              <div className="flex items-center space-x-3">
+                <div className="w-5 h-5 bg-blue-300/30 rounded"></div>
                 <div>
-                  <div className="loading-text-1"></div>
-                  <div className="loading-text-2"></div>
+                  <div className="h-4 bg-blue-300/30 rounded w-20 mb-1"></div>
+                  <div className="h-5 bg-blue-300/30 rounded w-16"></div>
                 </div>
               </div>
             </div>
@@ -84,13 +90,13 @@ const SystemHealth = ({ healthData, loading }) => {
   if (!healthData) {
     return (
       <div className="metric-card">
-        <div className="health-header">
-          <Activity className="health-title-icon" />
-          <h3 className="health-title">System Health</h3>
+        <div className="flex items-center space-x-2 mb-4">
+          <Activity className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Health</h3>
         </div>
-        <div className="health-empty">
-          <ShieldX className="empty-icon" />
-          <p className="empty-text">No health data available</p>
+        <div className="text-center py-8">
+          <ShieldX className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+          <p className="text-gray-300">No health data available</p>
         </div>
       </div>
     );
@@ -106,12 +112,12 @@ const SystemHealth = ({ healthData, loading }) => {
 
   return (
     <div className="metric-card">
-      <div className="health-header-main">
-        <div className="health-header">
-          <Activity className="health-title-icon" />
-          <h3 className="health-title">System Health</h3>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <Activity className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Health</h3>
         </div>
-        <div className="health-timestamp">
+        <div className="text-sm text-gray-300">
           {healthData.timestamp && (
             <>Updated: {new Date(healthData.timestamp).toLocaleTimeString()}</>
           )}
@@ -119,7 +125,7 @@ const SystemHealth = ({ healthData, loading }) => {
       </div>
 
       {/* Overall Status */}
-      <div className="health-overall">
+      <div className="mb-6">
         <HealthIndicator
           status={healthData.status}
           label="Overall System Status"
@@ -128,16 +134,18 @@ const SystemHealth = ({ healthData, loading }) => {
       </div>
 
       {/* System Metrics */}
-      <div className="health-metrics-grid">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <HealthIndicator
           status="good"
           label="Total Records"
           value={healthData.total_records}
+          icon={Database}
         />
         <HealthIndicator
           status="good"
           label="Latest Tick"
           value={healthData.latest_tick}
+          icon={Clock}
         />
         <HealthIndicator
           status={healthData.averages?.voltage > 20000 ? 'good' : 'warning'}
@@ -147,8 +155,8 @@ const SystemHealth = ({ healthData, loading }) => {
         />
       </div>
 
-      {/* Additional Metrics */}
-      <div className="health-additional-grid">
+      {/* Performance Averages */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <HealthIndicator
           status={healthData.averages?.load < 1200 ? 'good' : 'warning'}
           label="Avg Load"
@@ -160,11 +168,43 @@ const SystemHealth = ({ healthData, loading }) => {
           label="Avg Houses"
           value={Math.round(healthData.averages?.houses || 0)}
         />
-        <HealthIndicator
-          status={healthData.status === 'healthy' ? 'good' : healthData.status}
-          label="System Status"
-          value={healthData.status?.charAt(0).toUpperCase() + healthData.status?.slice(1)}
-        />
+      </div>
+
+      {/* System Recommendations */}
+      <div className="mt-6 metric-card">
+        <h4 className="text-sm font-medium text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">System Recommendations</h4>
+        <div className="space-y-1 text-xs text-gray-300">
+          {healthData.status === 'healthy' && (
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span>All systems operating within normal parameters</span>
+            </div>
+          )}
+          {healthData.status === 'warning' && (
+            <>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span>Monitor voltage levels closely</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span>Consider load balancing adjustments</span>
+              </div>
+            </>
+          )}
+          {healthData.status === 'critical' && (
+            <>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                <span>Immediate attention required</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                <span>Check grid stability</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

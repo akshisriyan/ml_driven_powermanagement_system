@@ -99,12 +99,31 @@ export const gridService = {
       };
     }
   },
-
-  // Get system health metrics (alias for compatibility)
-  getSystemHealth: async () => {
-    return gridService.getHealth();
+      console.error('Error fetching historical data:', error);
+      throw error;
+    }
   },
-
+  // Get system health metrics
+  getSystemHealth: async () => {
+    try {
+      const response = await api.get('/system-health');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching system health:', error);
+      // Return mock health data if API fails
+      return {
+        status: "healthy",
+        total_records: 150,
+        latest_tick: 149,
+        averages: {
+          voltage: 22250,
+          load: 950,
+          houses: 125
+        },
+        timestamp: new Date().toISOString()
+      };
+    }
+  },
   // Get model performance metrics
   getModelPerformance: async () => {
     try {
