@@ -1,50 +1,39 @@
 import React from 'react';
-import { Zap, RefreshCw } from 'lucide-react';
 
 const Header = ({ onRefresh, lastUpdated, isRefreshing }) => {
-  return (
-    <header className="metric-card mb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                ML-Driven Power Grid Management
-              </h1>
-              <p className="text-sm text-gray-300">
-                Real-time monitoring and predictive analytics dashboard
-              </p>
-              
-            </div>
-          </div>
+  const formatLastUpdated = (timestamp) => {
+    if (!timestamp) return 'Never';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString();
+  };
 
-          <div className="flex items-center space-x-4">
-            {lastUpdated && (
-              <div className="text-sm text-gray-300">
-                Last updated: {new Date(lastUpdated).toLocaleTimeString()}
-              </div>
-            )}
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className={`
-                btn-primary flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200
-                ${isRefreshing
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25'
-                }
-              `}
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
-            </button>
+  return (
+    <div className="header-container">
+      <div className="header-content">
+        <div className="header-status">
+          <div className="status-indicator">
+            <div className={`status-dot ${isRefreshing ? 'refreshing' : 'active'}`}></div>
+            <span className="status-text">
+              {isRefreshing ? 'Refreshing...' : 'System Online'}
+            </span>
+          </div>
+          <div className="last-updated">
+            Last updated: {formatLastUpdated(lastUpdated)}
           </div>
         </div>
+        
+        <div className="header-controls">
+          <button 
+            className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            <span className="refresh-icon">🔄</span>
+            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+          </button>
+        </div>
       </div>
-    </header>
+    </div>
   );
 };
 

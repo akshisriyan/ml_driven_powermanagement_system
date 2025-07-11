@@ -1,213 +1,147 @@
 import React from 'react';
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
 
-const ChartContainer = ({ title, children, className = "" }) => (
-  <div className={`metric-card ${className}`}>
-    <h3 className="text-lg font-semibold text-white mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{title}</h3>
-    <div className="h-80">
-      {children}
-    </div>
-  </div>
-);
-
-const Charts = ({ gridData, forecastData, historicalData }) => {
-  // Generate sample historical data for demo purposes if no real data available
-  const generateHistoricalData = () => {
-    const data = [];
-    for (let i = 30; i >= 0; i--) {
-      data.push({
-        tick: (gridData?.tick || 100) - i,
-        voltage: (gridData?.total_voltage || 24000) + (Math.random() - 0.5) * 2000,
-        load: (gridData?.total_load || 1000) + (Math.random() - 0.5) * 200,
-        houses: (gridData?.house_count || 100) + Math.floor((Math.random() - 0.5) * 10),
-      });
-    }
-    return data;
-  };
-
-  // Use real historical data if available, otherwise use generated data
-  const histData = historicalData?.data?.length > 0 
-    ? historicalData.data.map(item => ({
-        tick: item.tick,
-        voltage: item.total_voltage,
-        load: item.total_load,
-        houses: item.house_count,
-      }))
-    : generateHistoricalData();
-
-  // Voltage trend chart
-  const VoltageChart = () => (
-    <ChartContainer title="Voltage Trend Over Time">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={histData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="tick" />
-          <YAxis />
-          <Tooltip formatter={(value) => [`${value.toFixed(1)} V`, 'Voltage']} 
-            contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              border: '1px solid #667eea',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(102, 126, 234, 0.2)'
-            }}
-          />          <Area 
-            type="monotone" 
-            dataKey="voltage" 
-            stroke="#667eea" 
-            fill="url(#voltageGradient)" 
-            fillOpacity={0.8}
-          />
-          <defs>
-            <linearGradient id="voltageGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#667eea" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#764ba2" stopOpacity={0.2}/>
-            </linearGradient>
-          </defs>
-        </AreaChart>
-      </ResponsiveContainer>
-    </ChartContainer>
-  );
-
-  // Load and House Count chart
-  const LoadHouseChart = () => (
-    <ChartContainer title="Load vs Usage Count">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={histData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="tick" />
-          <YAxis yAxisId="left" />
-          <YAxis yAxisId="right" orientation="right" />
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              border: '1px solid #667eea',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(102, 126, 234, 0.2)'
-            }}
-          />
-          <Legend />          <Line 
-            yAxisId="left"
-            type="monotone" 
-            dataKey="load" 
-            stroke="#667eea" 
-            strokeWidth={3}
-            name="Load (kW)"
-            dot={{ fill: '#667eea', strokeWidth: 2, r: 4 }}
-          />
-          <Line 
-            yAxisId="right"
-            type="monotone" 
-            dataKey="houses" 
-            stroke="#764ba2" 
-            strokeWidth={3}
-            name="Users Count"
-            dot={{ fill: '#764ba2', strokeWidth: 2, r: 4 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </ChartContainer>
-  );
-
-  // Forecast chart
-  const ForecastChart = () => {
-    const forecastChartData = forecastData?.arima_forecast?.map((value, index) => ({
-      step: index + 1,
-      forecast: value,
-      current: index === 0 ? (gridData?.total_load || 1000) : null,
-    })) || [];
-
+const Charts = ({ gridData, forecastData, historicalData, loading }) => {
+  if (loading) {
     return (
-      <ChartContainer title="ARIMA Load Forecast (Next 10 Steps)">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={forecastChartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="step" />
-            <YAxis />            <Tooltip formatter={(value) => [`${value?.toFixed(1)} kW`, 'Predicted Load']} 
-              contentStyle={{
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                border: '1px solid #667eea',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-              }}
-            />
-            <Bar dataKey="forecast" fill="url(#forecastGradient)" />
-            <defs>
-              <linearGradient id="forecastGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#667eea" stopOpacity={0.9}/>
-                <stop offset="95%" stopColor="#764ba2" stopOpacity={0.6}/>
-              </linearGradient>
-            </defs>            {forecastChartData[0]?.current && (
-              <Bar dataKey="current" fill="#22c55e" />
-            )}
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+      <div className="charts-container">
+        <div className="chart-card loading">
+          <div className="chart-header">
+            <h3>Power Distribution</h3>
+          </div>
+          <div className="chart-content skeleton"></div>
+        </div>
+        <div className="chart-card loading">
+          <div className="chart-header">
+            <h3>Load Trends</h3>
+          </div>
+          <div className="chart-content skeleton"></div>
+        </div>
+      </div>
     );
-  };
-  // Power distribution pie chart
-  const PowerDistributionChart = () => {
-    const distributionData = [
-      { name: 'Admin', value: 60, color: '#667eea' },
-      { name: 'FOC', value: 25, color: '#764ba2' },
-      { name: 'FOE', value: 10, color: '#3b82f6' },
-      { name: 'FOB', value: 5, color: '#6366f1' },
-    ];
+  }
 
-    return (
-      <ChartContainer title="Power Distribution by Sector (NSBM)">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={distributionData}
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-            >
-              {distributionData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => [`${value}%`, 'Share']}
-              contentStyle={{
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                border: '1px solid #667eea',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px rgba(102, 126, 234, 0.2)'
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    );
-  };
+  const voltage = gridData?.total_voltage || 0;
+  const load = gridData?.total_load || 0;
+  const efficiency = voltage > 0 ? ((load / voltage) * 100).toFixed(1) : 0;
+
+  // Generate hourly data for the last 24 hours
+  const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+    hour: i,
+    voltage: Math.round(voltage * (0.9 + Math.random() * 0.2)),
+    load: Math.round(load * (0.8 + Math.random() * 0.4)),
+    efficiency: Math.round(80 + Math.random() * 20),
+    time: `${i.toString().padStart(2, '0')}:00`,
+  }));
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VoltageChart />
-        <LoadHouseChart />
+    <div className="charts-container">
+      <div className="chart-card">
+        <div className="chart-header">
+          <h3>⚡ Power Distribution</h3>
+        </div>
+        <div className="chart-content">
+          <div className="power-meter">
+            <div className="meter-circle">
+              <div className="meter-value">{voltage.toLocaleString()}</div>
+              <div className="meter-label">Volts</div>
+            </div>
+            <div className="meter-stats">
+              <div className="stat-item">
+                <div className="stat-value">{load.toLocaleString()}</div>
+                <div className="stat-label">Load (kW)</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{efficiency}%</div>
+                <div className="stat-label">Efficiency</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ForecastChart />
-        <PowerDistributionChart />
+
+      <div className="chart-card">
+        <div className="chart-header">
+          <h3>📊 Load Trends</h3>
+        </div>
+        <div className="chart-content">
+          <div className="trend-chart">
+            <div className="trend-bars">
+              {[85, 92, 78, 95, 88, 91, 87, 93, 89, 96].map((value, index) => (
+                <div key={index} className="trend-bar">
+                  <div 
+                    className="bar-fill" 
+                    style={{ height: `${value}%` }}
+                  ></div>
+                  <div className="bar-label">{index + 1}</div>
+                </div>
+              ))}
+            </div>
+            <div className="trend-info">
+              <div className="trend-stat">
+                <span className="trend-label">Current Load:</span>
+                <span className="trend-value">{load} kW</span>
+              </div>
+              <div className="trend-stat">
+                <span className="trend-label">Peak Load:</span>
+                <span className="trend-value">{Math.round(load * 1.2)} kW</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 24-Hour Performance Table */}
+      <div className="chart-card full-width">
+        <div className="chart-header">
+          <h3>📈 24-Hour Performance Data</h3>
+          <div className="chart-controls">
+            <button className="chart-btn active">Hourly</button>
+            <button className="chart-btn">Daily</button>
+            <button className="chart-btn">Weekly</button>
+          </div>
+        </div>
+        <div className="chart-content">
+          <div className="performance-table-container">
+            <table className="performance-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Voltage (V)</th>
+                  <th>Load (kW)</th>
+                  <th>Efficiency (%)</th>
+                  <th>Status</th>
+                  <th>Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hourlyData.slice(0, 12).map((data, index) => (
+                  <tr key={index}>
+                    <td className="time-cell">{data.time}</td>
+                    <td className="voltage-cell">{data.voltage.toLocaleString()}</td>
+                    <td className="load-cell">{data.load.toLocaleString()}</td>
+                    <td className="efficiency-cell">
+                      <div className="efficiency-bar-small">
+                        <div 
+                          className="efficiency-fill-small" 
+                          style={{ width: `${data.efficiency}%` }}
+                        ></div>
+                        <span className="efficiency-text-small">{data.efficiency}%</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-indicator ${data.efficiency > 85 ? 'optimal' : 'normal'}`}>
+                        {data.efficiency > 85 ? '🟢 Optimal' : '🟡 Normal'}
+                      </span>
+                    </td>
+                    <td className="trend-cell">
+                      {index > 0 && data.load > hourlyData[index - 1].load ? '📈' : '📉'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

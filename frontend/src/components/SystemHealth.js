@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, Database, Clock, Activity } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldAlert, ShieldX, Activity } from 'lucide-react';
 
 const HealthIndicator = ({ status, label, value, unit = "" }) => {
   const getStatusConfig = () => {

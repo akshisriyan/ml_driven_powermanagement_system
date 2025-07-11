@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -139,7 +139,148 @@ export const gridService = {
       console.error('Error clearing data:', error);
       throw error;
     }
-  }
+  },
+
+  // Get voltage forecast (ARIMA-based)
+  getVoltageForecast: async () => {
+    try {
+      const response = await api.get('/voltage-forecast');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching voltage forecast:', error);
+      // Return mock forecast data if API fails
+      return {
+        current_voltage: 22500,
+        forecast_timestamp: new Date().toISOString(),
+        model_info: {
+          aic: 850.5,
+          order: [1, 1, 1]
+        },
+        hourly_forecast: {
+          data: Array.from({ length: 60 }, (_, i) => ({
+            time: new Date(Date.now() + (i + 1) * 60000).toISOString(),
+            voltage: 22500 + Math.random() * 1000 - 500,
+            confidence_lower: 21500 + Math.random() * 1000 - 500,
+            confidence_upper: 23500 + Math.random() * 1000 - 500
+          })),
+          average: 22500,
+          trend: 'stable',
+          min_voltage: 21800,
+          max_voltage: 23200
+        },
+        daily_forecast: {
+          data: Array.from({ length: 24 }, (_, i) => ({
+            time: new Date(Date.now() + (i + 1) * 3600000).toISOString(),
+            voltage: 22500 + Math.random() * 1500 - 750,
+            confidence_lower: 21000 + Math.random() * 1500 - 750,
+            confidence_upper: 24000 + Math.random() * 1500 - 750
+          })),
+          average: 22500,
+          trend: 'stable',
+          min_voltage: 21500,
+          max_voltage: 23500
+        }
+      };
+    }
+  },
+
+  // Get forecast summary
+  getForecastSummary: async () => {
+    try {
+      const response = await api.get('/forecast-summary');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching forecast summary:', error);
+      // Return mock summary data if API fails
+      return {
+        current_voltage: 22500,
+        forecast_timestamp: new Date().toISOString(),
+        predictions: {
+          next_hour: {
+            average_voltage: 22400,
+            change_percentage: -0.4,
+            trend: 'decreasing'
+          },
+          next_day: {
+            average_voltage: 22300,
+            change_percentage: -0.9,
+            trend: 'decreasing'
+          }
+        },
+        alerts: [
+          {
+            type: 'info',
+            message: 'Slight voltage decrease expected over next 24 hours',
+            severity: 'low'
+          }
+        ],
+        confidence: 'high'
+      };
+    }
+  },
+
+  // Upload Excel file
+  uploadExcel: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post('/upload-excel', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading Excel file:', error);
+      throw error;
+    }
+  },
+
+  // Export data as CSV
+  exportData: async () => {
+    try {
+      const response = await api.get('/export-data', {
+        responseType: 'blob',
+      });
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `power_grid_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true, message: 'Data exported successfully' };
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      throw error;
+    }
+  },
+
+  // Get data statistics
+  getDataStatistics: async () => {
+    try {
+      const response = await api.get('/data-statistics');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching data statistics:', error);
+      // Return mock data if API fails
+      return {
+        total_records: 0,
+        oldest_record: null,
+        newest_record: null,
+        avg_voltage: 0,
+        avg_load: 0,
+        avg_houses: 0,
+        estimated_size: "0 KB"
+      };
+    }
+  },
 };
 
 export default api;

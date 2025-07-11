@@ -8,6 +8,8 @@ import Charts from './components/Charts';
 import SimulationControls from './components/SimulationControls';
 import ModelPredictions from './components/ModelPredictions';
 import SystemHealth from './components/SystemHealth';
+import VoltageForecast from './components/VoltageForecast';
+import DataManager from './components/DataManager';
 import { gridService } from './services/api';
 import './App.css';
 
@@ -173,8 +175,14 @@ function App() {
                   healthData={healthData}
                   loading={isRefreshing}
                 />
+                <DataManager 
+                  loading={isRefreshing}
+                />
               </div>
             </div>
+
+            {/* Voltage Forecast - Full Width */}
+            <VoltageForecast loading={isRefreshing} />
 
             {/* Model Predictions - Full Width */}
             <ModelPredictions 

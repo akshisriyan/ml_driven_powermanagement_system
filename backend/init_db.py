@@ -1,65 +1,61 @@
+#!/usr/bin/env python3
+"""
+Database initialization script for ML-driven Power Grid Management System
+This script creates the database schema and populates it with sample data.
+"""
+
 import sqlite3
 import os
+import sys
 
-def initialize_database():
-    """Initialize the SQLite database with the required schema"""
-    # Get the directory where this script is located
+def init_database():
+    """Initialize the database with schema and sample data"""
+    
+    # Get the directory of this script
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Database and schema file paths
     db_path = os.path.join(script_dir, 'database.db')
     schema_path = os.path.join(script_dir, 'schema.sql')
+    
+    print(f"Initializing database at: {db_path}")
+    print(f"Using schema from: {schema_path}")
     
     try:
         # Create database connection
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        # Read and execute schema file if it exists
-        if os.path.exists(schema_path):
-            with open(schema_path, 'r') as f:
-                schema_sql = f.read()
+        # Read and execute schema
+        with open(schema_path, 'r') as schema_file:
+            schema_sql = schema_file.read()
             cursor.executescript(schema_sql)
-        else:
-            # Create table manually if schema file doesn't exist
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS grid_data (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    tick INTEGER NOT NULL,
-                    total_voltage REAL NOT NULL,
-                    total_load REAL NOT NULL,
-                    house_count INTEGER NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            
-            # Create indices
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_grid_data_tick ON grid_data(tick)')
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_grid_data_created_at ON grid_data(created_at)')
-            
-            # Insert sample data if table is empty
-            cursor.execute('SELECT COUNT(*) FROM grid_data')
-            count = cursor.fetchone()[0]
-            
-            if count == 0:
-                sample_data = [
-                    (1, 24000.0, 1000.0, 100),
-                    (2, 24150.5, 1005.2, 101),
-                    (3, 24200.8, 1012.8, 102),
-                    (4, 24050.3, 998.5, 103),
-                    (5, 24300.2, 1020.1, 104)
-                ]
-                cursor.executemany(
-                    'INSERT INTO grid_data (tick, total_voltage, total_load, house_count) VALUES (?, ?, ?, ?)',
-                    sample_data
-                )
         
+        # Commit changes
         conn.commit()
-        conn.close()
-        print(f"Database initialized successfully at {db_path}")
         
+        # Verify table creation
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        print(f"Created tables: {[table[0] for table in tables]}")
+        
+        # Check if data was inserted
+        cursor.execute("SELECT COUNT(*) FROM grid_data;")
+        count = cursor.fetchone()[0]
+        print(f"Grid data records: {count}")
+        
+        conn.close()
+        print("Database initialization completed successfully!")
+        
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        sys.exit(1)
+    except FileNotFoundError as e:
+        print(f"File not found: {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"Error initializing database: {e}")
-        if 'conn' in locals():
-            conn.close()
+        print(f"Unexpected error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    initialize_database()
+    init_database()

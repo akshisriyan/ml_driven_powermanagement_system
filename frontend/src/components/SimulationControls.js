@@ -1,114 +1,100 @@
 import React, { useState } from 'react';
-import { Play, Settings, RefreshCw, AlertCircle } from 'lucide-react';
 
 const SimulationControls = ({ onRunSimulation, loading }) => {
-  const [houseGrowthRate, setHouseGrowthRate] = useState(0.02);
   const [isRunning, setIsRunning] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [simulationParams, setSimulationParams] = useState({
+    steps: 100,
+    houses: 120,
+    voltage: 22500
+  });
 
   const handleRunSimulation = async () => {
+    if (isRunning || loading) return;
+    
     setIsRunning(true);
-    setError(null);
-    setSuccess(false);
-
     try {
-      await onRunSimulation({ house_growth_rate: houseGrowthRate });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      setError(err.message || 'Failed to run simulation');
-      setTimeout(() => setError(null), 5000);
+      await onRunSimulation(simulationParams);
+    } catch (error) {
+      console.error('Simulation failed:', error);
     } finally {
       setIsRunning(false);
     }
-  };  return (
-    <div className="metric-card">
-      <div className="flex items-center space-x-2 mb-6">
-        <Settings className="w-5 h-5 text-blue-400" />
-        <h3 className="text-lg font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Simulation Controls</h3>
-      </div>
+  };
 
-      <div className="space-y-6">        {/* Parameter Controls */}
-        <div>
-          <label htmlFor="growth-rate" className="block text-sm font-medium text-gray-200 mb-2">
-            Usage Growth Rate
-          </label>
-          <div className="flex items-center space-x-4">
+  const handleParamChange = (param, value) => {
+    setSimulationParams(prev => ({
+      ...prev,
+      [param]: parseInt(value) || 0
+    }));
+  };
+
+  return (
+    <div className="simulation-controls">
+      <div className="controls-header">
+        <h3>🎮 Simulation Controls</h3>
+      </div>
+      
+      <div className="controls-content">
+        <div className="param-group">
+          <label className="param-label">
+            Simulation Steps:
             <input
-              id="growth-rate"
-              type="range"
-              min="0.001"
-              max="0.1"
-              step="0.001"
-              value={houseGrowthRate}
-              onChange={(e) => setHouseGrowthRate(parseFloat(e.target.value))}
-              className="flex-1 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg appearance-none cursor-pointer slider"
+              type="number"
+              value={simulationParams.steps}
+              onChange={(e) => handleParamChange('steps', e.target.value)}
+              min="10"
+              max="1000"
+              className="param-input"
             />
-            <span className="text-sm font-medium text-blue-200 min-w-[60px]">
-              {(houseGrowthRate * 100).toFixed(1)}%
-            </span>
-          </div>
-          <p className="text-xs text-gray-300 mt-1">
-            Controls how fast new Users are added to the grid
-          </p>
+          </label>
         </div>
 
-        {/* Run Button */}
-        <div className="flex flex-col space-y-3">          <button
-            onClick={handleRunSimulation}
-            disabled={isRunning || loading}
-            className={`
-              btn-primary flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300
-              ${isRunning || loading
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:scale-105 hover:shadow-lg'
-              }
-            `}
-          >
-            {isRunning ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Running Simulation...</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                <span>Run Simulation</span>
-              </>
-            )}
-          </button>
+        <div className="param-group">
+          <label className="param-label">
+            Number of Houses:
+            <input
+              type="number"
+              value={simulationParams.houses}
+              onChange={(e) => handleParamChange('houses', e.target.value)}
+              min="50"
+              max="200"
+              className="param-input"
+            />
+          </label>
+        </div>
 
-          {/* Status Messages */}          {error && (
-            <div className="error-message flex items-center space-x-2 p-3 rounded-lg">
-              <AlertCircle className="w-4 h-4" />
-              <span className="text-sm">{error}</span>
+        <div className="param-group">
+          <label className="param-label">
+            Initial Voltage:
+            <input
+              type="number"
+              value={simulationParams.voltage}
+              onChange={(e) => handleParamChange('voltage', e.target.value)}
+              min="20000"
+              max="25000"
+              className="param-input"
+            />
+          </label>
+        </div>
+
+        <button
+          className={`run-simulation-btn ${isRunning || loading ? 'running' : ''}`}
+          onClick={handleRunSimulation}
+          disabled={isRunning || loading}
+        >
+          <span className="btn-icon">
+            {isRunning || loading ? '⏳' : '▶️'}
+          </span>
+          {isRunning || loading ? 'Running...' : 'Run Simulation'}
+        </button>
+
+        <div className="simulation-status">
+          {isRunning && (
+            <div className="status-message">
+              <span className="status-icon">🔄</span>
+              <span>Simulation in progress...</span>
             </div>
           )}
-
-          {success && (
-            <div className="success-message flex items-center space-x-2 p-3 rounded-lg">
-              <div className="w-4 h-4 text-green-400">✓</div>
-              <span className="text-sm">Simulation completed successfully!</span>
-            </div>
-          )}
-        </div>        {/* Simulation Info */}
-        <div className="metric-card">
-          <h4 className="text-sm font-medium text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Simulation Parameters</h4>
-          <div className="space-y-1 text-xs text-gray-300">
-            <div className="flex justify-between">
-              <span>Growth Rate:</span>
-              <span className="text-blue-300">{(houseGrowthRate * 100).toFixed(3)}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Model:</span>
-              <span className="text-blue-300">NetLogo Power Grid</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Output:</span>
-              <span className="text-blue-300">CSV Data Export</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
