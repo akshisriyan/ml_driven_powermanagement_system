@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import grid
+from .routes import grid, auth
 
 app = FastAPI()
 
@@ -13,7 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include grid routes
+# Routers
+app.include_router(auth.router)
 app.include_router(grid.router)
 
 @app.get("/")

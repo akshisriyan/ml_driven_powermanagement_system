@@ -10,7 +10,10 @@ import ModelPredictions from './components/ModelPredictions';
 import SystemHealth from './components/SystemHealth';
 import VoltageForecast from './components/VoltageForecast';
 import DataManager from './components/DataManager';
-import { gridService } from './services/api';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Login from './components/Login';
+import { gridService, authService } from './services/api';
 import './App.css';
 
 function App() {
@@ -22,6 +25,10 @@ function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  });
+  const [view, setView] = useState('dashboard');
 
   // Fetch grid status
   const fetchGridStatus = useCallback(async () => {
@@ -105,10 +112,12 @@ function App() {
     }
   }, [refreshData]);
 
-  // Load data on component mount
+  // Load data on component mount if authenticated
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (user) {
+      loadData();
+    }
+  }, [loadData, user]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -123,75 +132,53 @@ function App() {
 
     return () => clearInterval(interval);
   }, [fetchGridStatus, fetchForecastData, fetchSystemHealth, isRefreshing, loading]);
+  if (!user) {
+    return (
+      <ErrorBoundary>
+        <Login onAuth={(u) => setUser(u)} />
+      </ErrorBoundary>
+    );
+  }
+
+  const isAdmin = user.role === 'admin';
+
   return (
     <ErrorBoundary>
-      {loading ? (
-        <LoadingScreen message="Initializing power grid dashboard..." />
-      ) : (
-        <div className="App">
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <h1>⚡ ML-Driven Power Grid Management</h1>
-              <p>Real-time monitoring and intelligent power distribution</p>
-              <h1>NSBM Green University</h1>
-            </div>
-
-            <Header 
-              onRefresh={refreshData}
-              lastUpdated={lastUpdated}
-              isRefreshing={isRefreshing}
-            />
-
-            {/* Error Banner */}
-            {error && (
-              <div className="error fade-in-up">
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  <span>⚠️</span>
-                  <span>{error}</span>
-                </div>
-              </div>
-            )}            {/* Grid Status Cards */}
-            <GridStatus gridData={gridData} loading={isRefreshing} />
-
-            {/* Main Content Grid */}
-            <div className="controls-section">
-              {/* Left Column - Charts */}
-              <div>
-                <Charts 
-                  gridData={gridData}
-                  forecastData={forecastData}
-                  historicalData={historicalData}
-                  loading={isRefreshing}
-                />
-              </div>
-
-              {/* Right Column - Controls and System Health */}
-              <div>
-                <SimulationControls 
-                  onRunSimulation={runSimulation}
-                  loading={isRefreshing}
-                />
-                <SystemHealth 
-                  healthData={healthData}
-                  loading={isRefreshing}
-                />
-                <DataManager 
-                  loading={isRefreshing}
-                />
+      {loading && <LoadingScreen message="Loading data..." />}
+      <div className="App">
+        <Navbar user={user} onLogout={() => { localStorage.clear(); setUser(null); }} onNavigate={setView} current={view} />
+        <div className="dashboard-content">
+          <div className="dashboard-header">
+            <h1>⚡ ML-Driven Power Grid Management</h1>
+            <p>Real-time monitoring and intelligent power distribution</p>
+          </div>
+          <Header onRefresh={refreshData} lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
+          {error && (
+            <div className="error fade-in-up">
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <span>⚠️</span>
+                <span>{error}</span>
               </div>
             </div>
-
-            {/* Voltage Forecast - Full Width */}
-            <VoltageForecast loading={isRefreshing} />
-
-            {/* Model Predictions - Full Width */}
-            <ModelPredictions 
-              forecastData={forecastData}
-              loading={isRefreshing}
-            />
+          )}
+          <GridStatus gridData={gridData} loading={isRefreshing} />
+          <div className="controls-section">
+            <div>
+              <Charts gridData={gridData} forecastData={forecastData} historicalData={historicalData} loading={isRefreshing} />
+              <VoltageForecast loading={isRefreshing} />
+              <ModelPredictions forecastData={forecastData} loading={isRefreshing} />
+            </div>
+            <div>
+              {isAdmin && (
+                <SimulationControls onRunSimulation={runSimulation} loading={isRefreshing} />
+              )}
+              <SystemHealth healthData={healthData} loading={isRefreshing} />
+              {isAdmin && <DataManager loading={isRefreshing} />}
+            </div>
           </div>
         </div>
-      )}
+        <Footer />
+      </div>
     </ErrorBoundary>
   );
 }
