@@ -17,6 +17,7 @@ const Footer = () => {
         <nav className="footer-nav" aria-label="Footer Navigation">
           <NavLink to="/" aria-label="Dashboard">Dashboard</NavLink>
           <NavLink to="/analytics" aria-label="Analytics">Analytics</NavLink>
+          <NavLink to="/billing" aria-label="Billing">Billing</NavLink>
           <NavLink to="/models" aria-label="Models">Models</NavLink>
           <NavLink to="/health" aria-label="Status">Status</NavLink>
         </nav>

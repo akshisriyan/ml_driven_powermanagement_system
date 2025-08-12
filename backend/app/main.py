@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import grid, auth
+from .routes import grid, auth, billing
 
 app = FastAPI()
 
@@ -16,6 +16,7 @@ app.add_middleware(
 # Routers
 app.include_router(auth.router)
 app.include_router(grid.router)
+app.include_router(billing.router)
 
 @app.get("/")
 def read_root():

@@ -310,4 +310,24 @@ export const gridService = {
   },
 };
 
+// University Billing services
+export const billingService = {
+  uploadExcel: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post('/billing/upload-excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+  getSummary: async () => {
+    const { data } = await api.get('/billing/summary');
+    return data;
+  },
+  getMonthly: async () => {
+    const { data } = await api.get('/billing/monthly');
+    return data;
+  }
+};
+
 export default api;

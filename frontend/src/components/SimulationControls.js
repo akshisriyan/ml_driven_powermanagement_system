@@ -5,7 +5,8 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
   const [simulationParams, setSimulationParams] = useState({
     steps: 100,
     houses: 120,
-    voltage: 22500
+    voltage: 22500,
+    house_growth_rate: 0.05, // 5% default growth rate (decimal)
   });
 
   const handleRunSimulation = async () => {
@@ -13,7 +14,10 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
     
     setIsRunning(true);
     try {
-      await onRunSimulation(simulationParams);
+      // Backend expects only { house_growth_rate: float }
+      await onRunSimulation({
+        house_growth_rate: Number(simulationParams.house_growth_rate) || 0,
+      });
     } catch (error) {
       console.error('Simulation failed:', error);
     } finally {
@@ -24,7 +28,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
   const handleParamChange = (param, value) => {
     setSimulationParams(prev => ({
       ...prev,
-      [param]: parseInt(value) || 0
+      [param]: param === 'house_growth_rate' ? (parseFloat(value) || 0) : (parseInt(value) || 0)
     }));
   };
 
@@ -72,6 +76,21 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
               onChange={(e) => handleParamChange('voltage', e.target.value)}
               min="20000"
               max="25000"
+              className="param-input"
+            />
+          </label>
+        </div>
+
+        <div className="param-group">
+          <label className="param-label">
+            House Growth Rate (decimal):
+            <input
+              type="number"
+              step="0.01"
+              value={simulationParams.house_growth_rate}
+              onChange={(e) => handleParamChange('house_growth_rate', e.target.value)}
+              min="0"
+              max="1"
               className="param-input"
             />
           </label>

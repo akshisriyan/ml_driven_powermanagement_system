@@ -6,6 +6,7 @@ const Navbar = ({ user, onLogout }) => {
   const links = [
     { to: '/', label: 'Dashboard', roles: ['admin','client'] },
     { to: '/analytics', label: 'Analytics', roles: ['admin','client'] },
+  { to: '/billing', label: 'Billing', roles: ['admin','client'] },
     { to: '/data', label: 'Data', roles: ['admin'] },
     { to: '/models', label: 'Models', roles: ['admin'] },
     { to: '/health', label: 'Health', roles: ['admin','client'] },

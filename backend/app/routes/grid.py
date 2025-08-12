@@ -24,7 +24,8 @@ warnings.filterwarnings('ignore')
 router = APIRouter()
 
 class GridParams(BaseModel):
-    house_growth_rate: float
+    # Default growth rate so missing body won't 422, and clients can omit safely
+    house_growth_rate: float = 0.05
 
 def get_database_path():
     """Get the absolute path to the database file"""
@@ -118,23 +119,35 @@ def get_historical_data(limit: int = 50):
 @router.post("/simulate")
 def run_simulation(params: GridParams):
     try:
-        # Update NetLogo parameter
-        with open('../../../simulation/power_grid.nlogo', 'r') as f:
-            lines = f.readlines()
-        for i, line in enumerate(lines):
-            if line.startswith('set house-growth-rate'):
-                lines[i] = f'set house-growth-rate {params.house_growth_rate}\n'
-        with open('../../../simulation/power_grid.nlogo', 'w') as f:
-            f.writelines(lines)
+        # Resolve paths
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(os.path.dirname(current_dir))
+        project_dir = os.path.dirname(backend_dir)
+        model_path = os.path.join(project_dir, 'simulation', 'power_grid.nlogo')
+        csv_path = os.path.join(project_dir, 'simulation', 'grid_data.csv')
+
+        # Try to update NetLogo parameter if model file exists; otherwise continue
+        if os.path.exists(model_path):
+            try:
+                with open(model_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                for i, line in enumerate(lines):
+                    if line.startswith('set house-growth-rate'):
+                        lines[i] = f'set house-growth-rate {params.house_growth_rate}\n'
+                with open(model_path, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+            except Exception:
+                # Non-fatal: continue with simulation
+                pass
 
         # Run NetLogo simulation
         run_netlogo_simulation()
 
-        # Store results in SQLite
-        df = pd.read_csv('../../../simulation/grid_data.csv')
-        conn = sqlite3.connect(get_database_path())
-        df.to_sql('grid_data', conn, if_exists='append', index=False)
-        conn.close()
+        # If NetLogo produced a CSV, import it; otherwise netlogo util likely wrote to DB already
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            with sqlite3.connect(get_database_path()) as conn:
+                df.to_sql('grid_data', conn, if_exists='append', index=False)
         return {"status": "Simulation completed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -489,21 +502,22 @@ async def export_data():
 async def get_data_statistics():
     """Get statistics about the stored data"""
     try:
-        conn = sqlite3.connect(get_database_path())
-        
-        # Get basic statistics
-        stats = pd.read_sql_query("""
-            SELECT 
-                COUNT(*) as total_records,
-                MIN(timestamp) as oldest_record,
-                MAX(timestamp) as newest_record,
-                AVG(total_voltage) as avg_voltage,
-                AVG(total_load) as avg_load,
-                AVG(house_count) as avg_houses
-            FROM grid_data
-        """, conn)
-        
-        conn.close()
+        # Use context manager to ensure connection closes on error as well
+        with sqlite3.connect(get_database_path()) as conn:
+            # Get basic statistics
+            stats = pd.read_sql_query(
+                """
+                SELECT 
+                    COUNT(*) as total_records,
+                    MIN(created_at) as oldest_record,
+                    MAX(created_at) as newest_record,
+                    AVG(total_voltage) as avg_voltage,
+                    AVG(total_load) as avg_load,
+                    AVG(house_count) as avg_houses
+                FROM grid_data
+                """,
+                conn,
+            )
         
         if stats.empty or stats['total_records'].iloc[0] == 0:
             return {

@@ -11,6 +11,7 @@ import ModelPredictions from './components/ModelPredictions';
 import SystemHealth from './components/SystemHealth';
 import VoltageForecast from './components/VoltageForecast';
 import DataManager from './components/DataManager';
+import Billing from './components/Billing';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Login from './components/Login';
@@ -192,6 +193,9 @@ function App() {
 
             {/* Health page */}
             <Route path="/health" element={<SystemHealth healthData={healthData} loading={isRefreshing} />} />
+
+            {/* Billing page */}
+            <Route path="/billing" element={<Billing />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
