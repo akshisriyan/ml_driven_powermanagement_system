@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingScreen } from './components/Loading';
 import Header from './components/Header';
@@ -13,7 +14,7 @@ import DataManager from './components/DataManager';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Login from './components/Login';
-import { gridService, authService } from './services/api';
+import { gridService } from './services/api';
 import './App.css';
 
 function App() {
@@ -28,7 +29,7 @@ function App() {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
   });
-  const [view, setView] = useState('dashboard');
+  const location = useLocation();
 
   // Fetch grid status
   const fetchGridStatus = useCallback(async () => {
@@ -146,36 +147,55 @@ function App() {
     <ErrorBoundary>
       {loading && <LoadingScreen message="Loading data..." />}
       <div className="App">
-        <Navbar user={user} onLogout={() => { localStorage.clear(); setUser(null); }} onNavigate={setView} current={view} />
+        <Navbar user={user} onLogout={() => { localStorage.clear(); setUser(null); }} currentPath={location.pathname} />
         <div className="dashboard-content">
-          <div className="dashboard-header">
-            <h1>⚡ ML-Driven Power Grid Management</h1>
-            <p>Real-time monitoring and intelligent power distribution</p>
-          </div>
-          <Header onRefresh={refreshData} lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
-          {error && (
-            <div className="error fade-in-up">
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <span>⚠️</span>
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-          <GridStatus gridData={gridData} loading={isRefreshing} />
-          <div className="controls-section">
-            <div>
-              <Charts gridData={gridData} forecastData={forecastData} historicalData={historicalData} loading={isRefreshing} />
-              <VoltageForecast loading={isRefreshing} />
-              <ModelPredictions forecastData={forecastData} loading={isRefreshing} />
-            </div>
-            <div>
-              {isAdmin && (
+          <Routes>
+            {/* Summary Dashboard */}
+            <Route path="/" element={
+              <>
+                <div className="dashboard-header">
+                  <h1>⚡ ML-Driven Power Grid Management</h1>
+                  <p>Real-time monitoring and intelligent power distribution</p>
+                </div>
+                <Header onRefresh={refreshData} lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
+                {error && (
+                  <div className="error fade-in-up">
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                      <span>⚠️</span>
+                      <span>{error}</span>
+                    </div>
+                  </div>
+                )}
+                <GridStatus gridData={gridData} loading={isRefreshing} />
+              </>
+            }/>
+
+            {/* Analytics page: Charts, Forecast, Predictions */}
+            <Route path="/analytics" element={
+              <>
+                <Charts gridData={gridData} forecastData={forecastData} historicalData={historicalData} loading={isRefreshing} />
+                <VoltageForecast loading={isRefreshing} />
+                <ModelPredictions forecastData={forecastData} loading={isRefreshing} />
+              </>
+            }/>
+
+            {/* Data manager - admin only */}
+            <Route path="/data" element={isAdmin ? <DataManager loading={isRefreshing} /> : <Navigate to="/" replace />} />
+
+            {/* Models page - admin only: run simulation and models area */}
+            <Route path="/models" element={isAdmin ? (
+              <>
                 <SimulationControls onRunSimulation={runSimulation} loading={isRefreshing} />
-              )}
-              <SystemHealth healthData={healthData} loading={isRefreshing} />
-              {isAdmin && <DataManager loading={isRefreshing} />}
-            </div>
-          </div>
+                <ModelPredictions forecastData={forecastData} loading={isRefreshing} />
+              </>
+            ) : <Navigate to="/" replace />} />
+
+            {/* Health page */}
+            <Route path="/health" element={<SystemHealth healthData={healthData} loading={isRefreshing} />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
         <Footer />
       </div>

@@ -12,36 +12,86 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+  background: #f5f9fb; /* light background */
   min-height: 100vh;
-  color: #ffffff;
+  color: #111827;
   overflow-x: hidden;
 }
 
-/* Navbar */
-.navbar {display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1.25rem;margin-bottom:1rem;background:rgba(0,0,0,0.25);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);border-radius:16px;}
-.brand {font-weight:700;font-size:1.1rem;background:linear-gradient(90deg,#00ffff,#ff1493);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.nav-links {list-style:none;display:flex;gap:0.75rem;}
-.nav-links li button {background:transparent;border:none;color:#fff;padding:0.5rem 0.9rem;border-radius:8px;cursor:pointer;font-weight:500;}
-.nav-links li.active button, .nav-links li button:hover {background:linear-gradient(135deg,#667eea55,#764ba255);} 
-.nav-right {display:flex;align-items:center;gap:1rem;}
-.user-info {display:flex;flex-direction:column;align-items:flex-end;}
-.user-name {font-size:0.85rem;font-weight:600;}
-.role-badge {margin-top:2px;padding:2px 8px;font-size:0.65rem;border-radius:12px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;background:#444;}
-.role-admin {background:#c026d3;color:#fff;}
-.role-client {background:#0ea5e9;color:#fff;}
-.logout-btn {background:#ef4444;border:none;color:#fff;padding:0.55rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;}
+:root {
+  --pg-bg: #ffffff;
+  --pg-bg-alt: #f0f7f4;
+  --pg-surface: #ffffff;
+  --pg-border: #d1e3ea;
+  --pg-border-strong: #9dc2cf;
+  --pg-text: #111827;
+  --pg-text-soft: #4b5563;
+  --pg-primary: #0d9488; /* teal-green */
+  --pg-primary-accent: #059669; /* green */
+  --pg-accent-blue: #2563eb; /* blue */
+  --pg-accent-light: #e0f2fe; /* light blue */
+  --pg-accent-green-light: #dcfce7; /* light green */
+  --pg-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.08);
+  --pg-shadow-sm: 0 2px 8px -2px rgba(15,23,42,0.06);
+  --pg-radius: 20px;
+}
+
+/* Navbar (light theme) */
+.navbar {display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1.25rem;margin-bottom:1rem;border-radius:16px;}
+.navbar.light {background: var(--pg-surface); border: 1px solid var(--pg-border); box-shadow: var(--pg-shadow-sm);}
+.nav-inner {display:flex;justify-content:space-between;align-items:center;gap:1rem;width:100%;}
+.nav-left {display:flex;align-items:center;gap:1rem;flex:1 1 auto;min-width:0;}
+.brand {display:flex;align-items:center;gap:0.5rem;font-weight:800;font-size:1.15rem;color: var(--pg-text);}
+.brand span {color: var(--pg-text);}
+.nav-logo {display:inline-block;}
+.nav-links {list-style:none;display:flex;gap:0.5rem;flex-wrap:nowrap;}
+.nav-links li {display:flex;}
+.navbar .nav-links a,
+.navbar .nav-links a:link,
+.navbar .nav-links a:visited {display:inline-block;text-decoration:none !important;color: var(--pg-text) !important;padding:0.45rem 0.8rem;border-radius:10px;border:1px solid transparent;font-weight:700;transition: all 0.15s ease-in-out;}
+.navbar .nav-links a:hover {background: var(--pg-accent-light); color: var(--pg-accent-blue) !important; border-color: var(--pg-border);} 
+.navbar .nav-links a.active {background: var(--pg-accent-green-light); color: var(--pg-primary) !important; border-color: var(--pg-border-strong);} 
+.nav-right {display:flex;align-items:center;gap:0.75rem;margin-left:auto;}
+.navbar.light .user-info {display:flex;flex-direction:row;align-items:center;gap:0.5rem;}
+.user-name {font-size:0.9rem;font-weight:700;color: var(--pg-text);}
+.role-badge {margin:0;padding:2px 8px;font-size:0.7rem;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;font-weight:800;background:#e5e7eb;color:#111827;border:1px solid var(--pg-border);} 
+.role-admin {background: #14b8a6; color:#fff;}
+.role-client {background: #3b82f6; color:#fff;}
+.navbar.light .role-badge { background:#e5e7eb !important; color:#111827 !important; border:1px solid var(--pg-border) !important; }
+.navbar.light .role-badge.role-admin { background:#14b8a6 !important; color:#fff !important; border-color:#0d9488 !important; }
+.navbar.light .role-badge.role-client { background:#3b82f6 !important; color:#fff !important; border-color:#2563eb !important; }
+.logout-btn {background:#ef4444;border:1px solid #dc2626;color:#fff;padding:0.5rem 0.9rem;border-radius:10px;cursor:pointer;font-weight:800;line-height:1;}
 .logout-btn:hover {background:#dc2626;}
 
-/* Footer */
-.footer {margin-top:2rem;padding:1rem 0;text-align:center;opacity:0.8;font-size:0.75rem;}
-.footer-content {display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;}
+/* Navbar responsive */
+@media (max-width: 768px) {
+  .nav-inner {align-items:flex-start;flex-wrap:wrap;}
+  .nav-left, .nav-right {width:100%;}
+  .nav-right {justify-content:flex-end;margin-left:0;}
+  .nav-links {flex-wrap:wrap;}
+}
+
+/* Footer (light theme) */
+.footer {margin-top:2rem;}
+.footer.light {background: var(--pg-surface); border:1px solid var(--pg-border); box-shadow: var(--pg-shadow-sm); border-radius:16px; padding:0.9rem 1.25rem;}
+.footer-inner {display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;}
+.footer-brand {display:flex;align-items:center;gap:0.6rem;}
+.footer-logo {display:inline-block;}
+.brand-text {display:flex;flex-direction:column;line-height:1;}
+.brand-name {font-weight:800;color: var(--pg-text);} 
+.brand-tag {font-size:0.7rem;color: var(--pg-text-soft);} 
+.footer-nav {display:flex;gap:0.5rem;}
+.footer-nav a {text-decoration:none;color: var(--pg-text);padding:0.35rem 0.7rem;border-radius:8px;border:1px solid transparent;font-weight:600;}
+.footer-nav a:hover {background: var(--pg-accent-light); color: var(--pg-accent-blue); border-color: var(--pg-border);} 
+.footer-meta {display:flex;align-items:center;gap:0.4rem;color: var(--pg-text-soft);font-size:0.8rem;}
 .footer .sep {opacity:0.5;}
+.link-like {background:none;border:1px solid var(--pg-border);border-radius:8px;padding:0.3rem 0.6rem;color: var(--pg-text);font-weight:600;cursor:pointer;}
+.link-like:hover {background: var(--pg-accent-light); color: var(--pg-accent-blue);} 
 
 /* Login */
 .login-wrapper {min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(circle at 30% 30%,#1e3a8a,#0f172a);} 
 .login-panel {width:100%;max-width:400px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);padding:2rem 2.25rem;border-radius:24px;border:1px solid rgba(255,255,255,0.15);box-shadow:0 10px 40px -10px rgba(0,0,0,0.6);} 
-.login-panel h2 {margin-bottom:0.25rem;font-size:1.75rem;background:linear-gradient(90deg,#00ffff,#ff1493);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-panel h2 {margin-bottom:0.25rem;font-size:1.75rem;background:linear-gradient(90deg,#00ffff,#ff1493);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .login-subtitle {font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;margin-bottom:1.25rem;font-weight:600;}
 .auth-form {display:flex;flex-direction:column;gap:1rem;}
 .form-row {display:flex;flex-direction:column;gap:0.4rem;}
@@ -66,7 +116,6 @@ body {
 .dashboard-content {
   max-width: 1400px;
   margin: 0 auto;
-  space-y: 24px; /* This line is removed */
 }
 
 .dashboard-header {
@@ -2333,3 +2382,204 @@ body {
     padding: 0.75rem;
   }
 }
+
+/* ============================= */
+/* Light Theme Overrides Section */
+/* ============================= */
+
+/* Layout */
+.App { background: transparent; }
+.dashboard-content { padding-bottom: 2rem; }
+
+/* Replace neon gradient cards with clean surfaces */
+.card, .metric-card, .status-card, .chart-card, .prediction-card, .summary-card,
+.data-manager, .upload-section, .download-section, .data-stats, .system-health,
+.forecast-container, .grid-data-table, .charts-container, .model-predictions,
+.simulation-controls, .grid-status-card, .forecast-item, .alert-item,
+.health-indicator, .health-metric, .metric-card, .prediction-card, .data-manager,
+.forecast-item, .stat-item, .status-item, .status-item, .chart-container,
+.model-info {
+  background: var(--pg-surface) !important;
+  border: 1px solid var(--pg-border) !important;
+  color: var(--pg-text) !important;
+  box-shadow: var(--pg-shadow);
+  backdrop-filter: none;
+}
+
+/* Headers */
+.dashboard-header { background: var(--pg-surface) !important; border:1px solid var(--pg-border) !important; box-shadow: var(--pg-shadow); }
+.dashboard-header h1 { text-shadow: none; }
+.dashboard-header p { text-shadow: none; }
+
+/* Text Colors Reset */
+.status-label, .status-value, .status-unit,
+.card-label, .card-value,
+.metric-label, .metric-value,
+.model-name, .model-description,
+.prediction-value, .prediction-change,
+.summary-title, .summary-value,
+.health-title, .health-label, .health-value,
+.stat-label, .stat-value,
+.upload-info, .download-info p, .download-info li,
+.alert-message, .alert-type, .alert-time,
+.forecast-time, .forecast-value, .forecast-message,
+.table-header h3, .table-header, .table-header h3 span,
+.chart-header h3, .chart-btn, .chart-btn.active,
+.status-item, .status-label, .status-value {
+  color: var(--pg-text) !important;
+  text-shadow: none !important;
+}
+
+/* Buttons */
+.refresh-button, .run-simulation-btn, .upload-button, .download-button, .retry-button, .refresh-btn {
+  background: linear-gradient(90deg, var(--pg-primary), var(--pg-accent-blue)) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px -2px rgba(13,148,136,0.35);
+}
+.refresh-button:hover, .run-simulation-btn:hover, .upload-button:hover, .download-button:hover, .retry-button:hover, .refresh-btn:hover { filter: brightness(1.05); transform: translateY(-2px); }
+
+/* Charts & Bars */
+.bar-fill, .efficiency-fill, .progress-fill { background: linear-gradient(90deg, var(--pg-primary), var(--pg-accent-blue)) !important; box-shadow:none; }
+.meter-circle { background: linear-gradient(90deg,var(--pg-primary),var(--pg-accent-blue)) !important; box-shadow:0 4px 18px -4px rgba(37,99,235,0.4); }
+
+/* Tables */
+table, th, td { border-color: var(--pg-border) !important; }
+.performance-table-container, .table-container { background: var(--pg-surface) !important; box-shadow: var(--pg-shadow); }
+.performance-table th, .data-table th { background: var(--pg-accent-light) !important; color: #1e3a8a !important; border-bottom:1px solid var(--pg-border) !important; text-shadow:none; }
+.performance-table td, .data-table td { color: var(--pg-text) !important; }
+.performance-table tr:hover, .data-table tr:hover { background:#f1faff !important; box-shadow:none; transform:none; }
+
+/* Badges */
+.status-indicator.optimal, .status-badge.active { background: var(--pg-accent-green-light) !important; color: #065f46 !important; }
+.status-indicator.normal, .status-badge.maintenance { background: #fff4e5 !important; color: #9a3412 !important; }
+.role-badge { background: var(--pg-accent-blue) !important; color:#fff !important; }
+.role-admin { background: var(--pg-primary) !important; }
+
+/* Navbar Light (in case component class present) */
+.navbar.light { background:#eceff1 !important; border:1px solid #d2d6d9; box-shadow: var(--pg-shadow-sm); }
+.navbar.light .nav-links li button { color: var(--pg-text); }
+.navbar.light .nav-links li.active button { background: var(--pg-accent-light); color:#1e3a8a; }
+
+/* Footer Light */
+.footer.light { background:#eceff1 !important; color: var(--pg-text); }
+.footer.light a { color:#1e3a8a; }
+
+/* Login Light */
+.login-wrapper { background: linear-gradient(135deg,#e0f2fe,#dcfce7) !important; }
+.login-panel { background:#ffffff !important; border:1px solid var(--pg-border); box-shadow:0 12px 32px -8px rgba(15,23,42,0.15); color:var(--pg-text); }
+.login-panel h2 { background:none; -webkit-text-fill-color:inherit; color:var(--pg-text); }
+.form-row input, .form-row select { background:#f4f9fb !important; border:1px solid var(--pg-border) !important; color:var(--pg-text) !important; }
+.form-row input:focus, .form-row select:focus { border-color: var(--pg-accent-blue) !important; box-shadow:0 0 0 3px rgba(37,99,235,0.25) !important; }
+.auth-error { background:#fee2e2 !important; color:#991b1b !important; border:1px solid #fca5a5 !important; text-shadow:none; }
+.link-btn { color: var(--pg-accent-blue) !important; }
+
+/* Alerts */
+.alert-item { border:1px solid var(--pg-border) !important; }
+.alert-item:hover { box-shadow: var(--pg-shadow); }
+.alert-type { color: var(--pg-primary) !important; }
+
+/* Forecast grid */
+.forecast-item { background: var(--pg-surface) !important; border:1px solid var(--pg-border) !important; }
+.forecast-value { color: var(--pg-accent-blue) !important; }
+
+/* Remove leftover intense glow/shadows */
+.card-value, .status-value, .prediction-value, .meter-value, .stat-value { text-shadow:none !important; }
+
+/* Utility */
+.muted { color: var(--pg-text-soft) !important; }
+.surface { background: var(--pg-surface); border:1px solid var(--pg-border); border-radius: var(--pg-radius); }
+.surface-alt { background: var(--pg-bg-alt); }
+
+/* Scrollbar (Webkit) */
+::-webkit-scrollbar { width:10px; }
+::-webkit-scrollbar-track { background:#e2e8f0; }
+::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:6px; }
+::-webkit-scrollbar-thumb:hover { background:#64748b; }
+
+/* System status bar (System Online) - Light overrides */
+.header-container { background: var(--pg-surface) !important; border:1px solid var(--pg-border) !important; box-shadow: var(--pg-shadow); }
+.header-container .status-text { color: var(--pg-text) !important; text-shadow:none !important; font-weight:700; }
+.header-container .last-updated { color: var(--pg-text-soft) !important; text-shadow:none !important; font-weight:600; }
+.header-container .status-indicator, 
+.header-container .status-indicator *,
+.header-container .status-item, 
+.header-container .status-item * {
+  color: #000 !important;
+  text-shadow: none !important;
+}
+
+/* Headings in modules/cards — ensure solid black, remove gradients */
+.forecast-header h3,
+.charts-title,
+.charts-header h3,
+.predictions-header h3,
+.predictions-section h4,
+.data-manager-header h3,
+.upload-section h4,
+.download-section h4,
+.table-header h3,
+.controls-header h3,
+.model-info h4,
+.summary-title,
+.forecast-chart h4,
+.current-status h4,
+.alerts-section h4,
+.predictions-section h4,
+.charts-container h4,
+.grid-data-table h3,
+.system-health .health-title {
+  color: #000 !important;
+  background: none !important;
+  -webkit-text-fill-color: #000 !important;
+  text-shadow: none !important;
+}
+
+/* Force black text in all content cards to ensure readability on white backgrounds */
+.card *,
+.metric-card *,
+.status-card *,
+.chart-card *,
+.grid-status-card *,
+.grid-status-cards *,
+.charts-container *,
+.model-predictions *,
+.simulation-controls *,
+.prediction-card *,
+.summary-card *,
+.grid-data-table *,
+.performance-table *,
+.data-table *,
+.data-manager *,
+.upload-section *,
+.download-section *,
+.data-stats *,
+.system-health *,
+.health-indicator *,
+.health-metric *,
+.metrics-grid *,
+.status-item *,
+.alerts-list *,
+.alert-item *,
+.forecast-container *,
+.forecast-item *,
+.forecast-grid *,
+.forecast-display *,
+.chart-container *,
+.model-info *,
+.table-header *,
+.table-stats *,
+.stat-badge *,
+.stats-grid * {
+  color: #000 !important;
+  text-shadow: none !important;
+}
+
+/* Make dashboard title solid black (no gradient) */
+.dashboard-header h1 {
+  background: none !important;
+  -webkit-text-fill-color: #000 !important;
+  color: #000 !important;
+}
+.dashboard-header p { color: #000 !important; }
+
