@@ -4,7 +4,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [simulationParams, setSimulationParams] = useState({
     steps: 100,
-    houses: 120,
+  houses: 120,
     voltage: 22500,
     house_growth_rate: 0.05, // 5% default growth rate (decimal)
   });
@@ -55,7 +55,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
 
         <div className="param-group">
           <label className="param-label">
-            Number of Houses:
+            Number of Campus Units:
             <input
               type="number"
               value={simulationParams.houses}
@@ -83,7 +83,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
 
         <div className="param-group">
           <label className="param-label">
-            House Growth Rate (decimal):
+            Unit Growth Rate (decimal):
             <input
               type="number"
               step="0.01"

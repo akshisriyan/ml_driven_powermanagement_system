@@ -9,7 +9,7 @@ import os
 import datetime
 import warnings
 import io
-from ..utils.netlogo import run_netlogo_simulation
+from ..utils.netlogo import run_netlogo_simulation, backfill_zone_metrics_for_recent
 
 # Try to import statsmodels, if not available, provide fallback
 try:
@@ -24,8 +24,7 @@ warnings.filterwarnings('ignore')
 router = APIRouter()
 
 class GridParams(BaseModel):
-    # Default growth rate so missing body won't 422, and clients can omit safely
-    house_growth_rate: float = 0.05
+    house_growth_rate: float
 
 def get_database_path():
     """Get the absolute path to the database file"""
@@ -76,7 +75,7 @@ def get_system_health():
                 "timestamp": pd.Timestamp.now().isoformat()
             }
         
-        # Determine system health status
+    # Determine system health status
         avg_voltage = avg_df['avg_voltage'].iloc[0]
         avg_load = avg_df['avg_load'].iloc[0]
         status = "healthy"
@@ -86,6 +85,22 @@ def get_system_health():
         if avg_voltage < 15000 or avg_load > 1500:
             status = "critical"
         
+        # Read generator setting
+        try:
+            sconn = sqlite3.connect(get_database_path())
+            scur = sconn.cursor()
+            scur.execute("SELECT value FROM settings WHERE key='generator_enabled'")
+            srow = scur.fetchone()
+            sconn.close()
+            generator_enabled = bool(srow and str(srow[0]) == '1')
+        except Exception:
+            generator_enabled = False
+
+        # Recommend action
+        recommended_action = None
+        if status in ("warning", "critical") and not generator_enabled:
+            recommended_action = "enable_generator"
+
         return {
             "status": status,
             "total_records": int(total_count),
@@ -95,7 +110,9 @@ def get_system_health():
                 "load": float(avg_df['avg_load'].iloc[0]),
                 "houses": float(avg_df['avg_houses'].iloc[0])
             },
-            "timestamp": pd.Timestamp.now().isoformat()
+            "timestamp": pd.Timestamp.now().isoformat(),
+            "generator": {"enabled": generator_enabled},
+            "recommended_action": recommended_action
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -123,31 +140,70 @@ def run_simulation(params: GridParams):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.dirname(os.path.dirname(current_dir))
         project_dir = os.path.dirname(backend_dir)
-        model_path = os.path.join(project_dir, 'simulation', 'power_grid.nlogo')
-        csv_path = os.path.join(project_dir, 'simulation', 'grid_data.csv')
+        sim_dir = os.path.join(project_dir, 'simulation')
+        nlogo_path = os.path.join(sim_dir, 'power_grid.nlogo')
+        csv_path = os.path.join(sim_dir, 'grid_data.csv')
 
-        # Try to update NetLogo parameter if model file exists; otherwise continue
-        if os.path.exists(model_path):
-            try:
-                with open(model_path, 'r', encoding='utf-8') as f:
+        # Update NetLogo parameter if model file exists
+        try:
+            if os.path.exists(nlogo_path):
+                with open(nlogo_path, 'r', encoding='utf-8', errors='ignore') as f:
                     lines = f.readlines()
                 for i, line in enumerate(lines):
-                    if line.startswith('set house-growth-rate'):
+                    if line.strip().startswith('set house-growth-rate'):
                         lines[i] = f'set house-growth-rate {params.house_growth_rate}\n'
-                with open(model_path, 'w', encoding='utf-8') as f:
+                with open(nlogo_path, 'w', encoding='utf-8') as f:
                     f.writelines(lines)
-            except Exception:
-                # Non-fatal: continue with simulation
-                pass
+        except Exception:
+            pass
 
         # Run NetLogo simulation
         run_netlogo_simulation()
+        # Backfill zone metrics from recent grid data
+        try:
+            backfill_zone_metrics_for_recent(50)
+        except Exception:
+            pass
 
-        # If NetLogo produced a CSV, import it; otherwise netlogo util likely wrote to DB already
+        # Import CSV results if present
         if os.path.exists(csv_path):
-            df = pd.read_csv(csv_path)
-            with sqlite3.connect(get_database_path()) as conn:
-                df.to_sql('grid_data', conn, if_exists='append', index=False)
+            try:
+                df = pd.read_csv(csv_path)
+                # Normalize columns
+                col_map = {
+                    'voltage': 'total_voltage',
+                    'total_voltage': 'total_voltage',
+                    'load': 'total_load',
+                    'total_load': 'total_load',
+                    'houses': 'house_count',
+                    'house_count': 'house_count',
+                }
+                rename = {}
+                for c in df.columns:
+                    k = str(c).strip()
+                    if k in col_map:
+                        rename[c] = col_map[k]
+                df = df.rename(columns=rename)
+                # Required columns
+                for req in ['total_voltage', 'total_load']:
+                    if req not in df.columns:
+                        raise ValueError(f'Missing required column: {req}')
+                if 'house_count' not in df.columns:
+                    df['house_count'] = 0
+                if 'tick' not in df.columns:
+                    # create sequential ticks
+                    conn_tmp = sqlite3.connect(get_database_path())
+                    cur = conn_tmp.cursor()
+                    cur.execute('SELECT COALESCE(MAX(tick), 0) FROM grid_data')
+                    start = cur.fetchone()[0] + 1
+                    conn_tmp.close()
+                    df['tick'] = range(start, start + len(df))
+
+                conn = sqlite3.connect(get_database_path())
+                df[['tick', 'total_voltage', 'total_load', 'house_count']].to_sql('grid_data', conn, if_exists='append', index=False)
+                conn.close()
+            except Exception as ie:
+                raise HTTPException(status_code=500, detail=f'Failed to import simulation CSV: {ie}')
         return {"status": "Simulation completed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -502,22 +558,21 @@ async def export_data():
 async def get_data_statistics():
     """Get statistics about the stored data"""
     try:
-        # Use context manager to ensure connection closes on error as well
-        with sqlite3.connect(get_database_path()) as conn:
-            # Get basic statistics
-            stats = pd.read_sql_query(
-                """
-                SELECT 
-                    COUNT(*) as total_records,
-                    MIN(created_at) as oldest_record,
-                    MAX(created_at) as newest_record,
-                    AVG(total_voltage) as avg_voltage,
-                    AVG(total_load) as avg_load,
-                    AVG(house_count) as avg_houses
-                FROM grid_data
-                """,
-                conn,
-            )
+        conn = sqlite3.connect(get_database_path())
+        
+        # Get basic statistics
+        stats = pd.read_sql_query("""
+            SELECT 
+                COUNT(*) as total_records,
+                MIN(created_at) as oldest_record,
+                MAX(created_at) as newest_record,
+                AVG(total_voltage) as avg_voltage,
+                AVG(total_load) as avg_load,
+                AVG(house_count) as avg_houses
+            FROM grid_data
+        """, conn)
+        
+        conn.close()
         
         if stats.empty or stats['total_records'].iloc[0] == 0:
             return {

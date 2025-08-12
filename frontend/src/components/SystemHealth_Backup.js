@@ -55,12 +55,6 @@ const HealthIndicator = ({ status, label, value, unit = "" }) => {
     </div>
   );
 };
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const SystemHealth = ({ healthData, loading }) => {
   if (loading) {
@@ -164,9 +158,9 @@ const SystemHealth = ({ healthData, loading }) => {
           unit="kW"
         />
         <HealthIndicator
-          status="good"
-          label="Avg Houses"
-          value={Math.round(healthData.averages?.houses || 0)}
+          status={healthData.generator?.enabled ? 'good' : 'warning'}
+          label="Generator"
+          value={healthData.generator?.enabled ? 'Enabled' : 'Off'}
         />
       </div>
 

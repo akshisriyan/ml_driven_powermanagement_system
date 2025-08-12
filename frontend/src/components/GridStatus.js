@@ -1,6 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { zonesService } from '../services/api';
 
 const GridStatus = ({ gridData, loading }) => {
+  const [zonesCount, setZonesCount] = useState(null);
+  const [zonesPreview, setZonesPreview] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const list = await zonesService.list();
+        if (!isMounted) return;
+        const zones = list?.zones || [];
+        setZonesCount(zones.length || 0);
+        setZonesPreview(zones.slice(0, 4));
+      } catch (e) {
+        // ignore errors, fall back to mock below
+      }
+    })();
+    return () => { isMounted = false; };
+  }, []);
   if (loading) {
     return (
       <div className="grid-status-container">
@@ -21,16 +40,25 @@ const GridStatus = ({ gridData, loading }) => {
 
   const voltage = gridData?.total_voltage || 0;
   const load = gridData?.total_load || 0;
-  const houses = gridData?.house_count || 0;
+  const houses = gridData?.house_count || 0; // kept for backward compatibility
   const tick = gridData?.tick || 0;
 
   // Generate sample detailed data for the table
-  const detailedData = [
-    { id: 1, zone: 'Zone A', voltage: Math.round(voltage * 0.25), load: Math.round(load * 0.3), houses: Math.round(houses * 0.2), status: 'Active' },
-    { id: 2, zone: 'Zone B', voltage: Math.round(voltage * 0.22), load: Math.round(load * 0.25), houses: Math.round(houses * 0.25), status: 'Active' },
-    { id: 3, zone: 'Zone C', voltage: Math.round(voltage * 0.28), load: Math.round(load * 0.2), houses: Math.round(houses * 0.3), status: 'Active' },
-    { id: 4, zone: 'Zone D', voltage: Math.round(voltage * 0.25), load: Math.round(load * 0.25), houses: Math.round(houses * 0.25), status: 'Maintenance' },
-  ];
+  const detailedData = zonesPreview.length > 0
+    ? zonesPreview.map((z, i) => ({
+        id: z.id || i,
+        zone: z.name,
+        category: z.category,
+        voltage: z.latest?.voltage != null ? Math.round(z.latest.voltage) : Math.round(voltage * 0.25),
+        load: z.latest?.load != null ? Math.round(z.latest.load) : Math.round(load * 0.25),
+        status: (z.status || 'Active').charAt(0).toUpperCase() + (z.status || 'Active').slice(1),
+      }))
+    : [
+      { id: 1, zone: 'Faculty of Engineering', category: 'faculty', voltage: Math.round(voltage * 0.25), load: Math.round(load * 0.3), status: 'Active' },
+      { id: 2, zone: 'Administration', category: 'admin', voltage: Math.round(voltage * 0.22), load: Math.round(load * 0.25), status: 'Active' },
+      { id: 3, zone: 'Hostels', category: 'hostel', voltage: Math.round(voltage * 0.28), load: Math.round(load * 0.2), status: 'Active' },
+      { id: 4, zone: 'Library', category: 'library', voltage: Math.round(voltage * 0.25), load: Math.round(load * 0.25), status: 'Maintenance' },
+    ];
 
   return (
     <div className="grid-status-container">
@@ -52,10 +80,10 @@ const GridStatus = ({ gridData, loading }) => {
         </div>
 
         <div className="grid-status-card">
-          <div className="card-icon houses">🏠</div>
+          <div className="card-icon houses">�</div>
           <div className="card-content">
-            <div className="card-value">{houses}</div>
-            <div className="card-label">Connected Houses</div>
+            <div className="card-value">{zonesCount != null ? zonesCount : 0}</div>
+            <div className="card-label">Active Zones</div>
           </div>
         </div>
 
@@ -84,7 +112,7 @@ const GridStatus = ({ gridData, loading }) => {
                 <th>Zone</th>
                 <th>Voltage (V)</th>
                 <th>Load (kW)</th>
-                <th>Houses</th>
+                <th>Category</th>
                 <th>Status</th>
                 <th>Efficiency</th>
               </tr>
@@ -100,7 +128,7 @@ const GridStatus = ({ gridData, loading }) => {
                   </td>
                   <td className="voltage-cell">{row.voltage.toLocaleString()}</td>
                   <td className="load-cell">{row.load.toLocaleString()}</td>
-                  <td className="houses-cell">{row.houses}</td>
+                  <td className="houses-cell">{row.category}</td>
                   <td>
                     <span className={`status-badge ${row.status.toLowerCase()}`}>
                       {row.status === 'Active' ? '✅' : '🔧'} {row.status}

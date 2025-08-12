@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingScreen } from './components/Loading';
 import Header from './components/Header';
+import TopNotification from './components/TopNotification';
 import GridStatus from './components/GridStatus';
 import Charts from './components/Charts';
 import SimulationControls from './components/SimulationControls';
@@ -12,6 +13,7 @@ import SystemHealth from './components/SystemHealth';
 import VoltageForecast from './components/VoltageForecast';
 import DataManager from './components/DataManager';
 import Billing from './components/Billing';
+import Zones from './components/Zones';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Login from './components/Login';
@@ -148,6 +150,7 @@ function App() {
     <ErrorBoundary>
       {loading && <LoadingScreen message="Loading data..." />}
       <div className="App">
+        <TopNotification />
         <Navbar user={user} onLogout={() => { localStorage.clear(); setUser(null); }} currentPath={location.pathname} />
         <div className="dashboard-content">
           <Routes>
@@ -196,6 +199,9 @@ function App() {
 
             {/* Billing page */}
             <Route path="/billing" element={<Billing />} />
+
+            {/* Zones page */}
+            <Route path="/zones" element={<Zones />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

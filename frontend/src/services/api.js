@@ -330,4 +330,26 @@ export const billingService = {
   }
 };
 
+export const controlService = {
+  getGenerator: async () => {
+    const { data } = await api.get('/control/generator');
+    return data;
+  },
+  setGenerator: async (enabled) => {
+    const { data } = await api.post('/control/generator', { enabled });
+    return data;
+  }
+};
+
+export const zonesService = {
+  list: async () => {
+    const { data } = await api.get('/zones');
+    return data;
+  },
+  summary: async () => {
+    const { data } = await api.get('/zones/summary');
+    return data;
+  }
+};
+
 export default api;
