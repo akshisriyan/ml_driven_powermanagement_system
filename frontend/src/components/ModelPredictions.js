@@ -17,10 +17,20 @@ const ModelPredictions = ({ forecastData, loading }) => {
     );
   }
 
-  const svr_prediction = forecastData?.svr_prediction || 0;
-  const arima_prediction = forecastData?.arima_prediction || 0;
-  const ensemble_prediction = forecastData?.ensemble_prediction || 0;
-  const confidence = forecastData?.confidence || 0;
+  const hasValue = (v) => v !== undefined && v !== null && !Number.isNaN(v);
+  const svr_prediction = hasValue(forecastData?.svr_prediction) ? forecastData.svr_prediction : null;
+  const arima_prediction = hasValue(forecastData?.arima_prediction)
+    ? forecastData.arima_prediction
+    : // backward-compat: use first of arima_forecast if provided
+      (Array.isArray(forecastData?.arima_forecast) && forecastData.arima_forecast.length > 0
+        ? forecastData.arima_forecast[0]
+        : null);
+  const ensemble_prediction = hasValue(forecastData?.ensemble_prediction)
+    ? forecastData.ensemble_prediction
+    : (hasValue(svr_prediction) && hasValue(arima_prediction)
+        ? (Number(svr_prediction) + Number(arima_prediction)) / 2
+        : null);
+  const confidence = hasValue(forecastData?.confidence) ? forecastData.confidence : 0.6;
 
   return (
     <div className="model-predictions">
@@ -41,9 +51,7 @@ const ModelPredictions = ({ forecastData, loading }) => {
                 <div className="model-description">Support Vector Regression</div>
               </div>
             </div>
-            <div className="prediction-value">
-              {svr_prediction ? `${Math.round(svr_prediction)} kW` : 'N/A'}
-            </div>
+            <div className="prediction-value">{hasValue(svr_prediction) ? `${Math.round(svr_prediction)} kW` : 'N/A'}</div>
           </div>
 
           <div className="prediction-card">
@@ -54,9 +62,7 @@ const ModelPredictions = ({ forecastData, loading }) => {
                 <div className="model-description">Time Series Analysis</div>
               </div>
             </div>
-            <div className="prediction-value">
-              {arima_prediction ? `${Math.round(arima_prediction)} kW` : 'N/A'}
-            </div>
+            <div className="prediction-value">{hasValue(arima_prediction) ? `${Math.round(arima_prediction)} kW` : 'N/A'}</div>
           </div>
 
           <div className="prediction-card ensemble">
@@ -67,9 +73,7 @@ const ModelPredictions = ({ forecastData, loading }) => {
                 <div className="model-description">Combined Prediction</div>
               </div>
             </div>
-            <div className="prediction-value">
-              {ensemble_prediction ? `${Math.round(ensemble_prediction)} kW` : 'N/A'}
-            </div>
+            <div className="prediction-value">{hasValue(ensemble_prediction) ? `${Math.round(ensemble_prediction)} kW` : 'N/A'}</div>
           </div>
         </div>
 
@@ -82,18 +86,18 @@ const ModelPredictions = ({ forecastData, loading }) => {
             <div className="summary-content">
               <div className="summary-stat">
                 <div className="stat-label">Confidence Level</div>
-                <div className="stat-value">{(confidence * 100).toFixed(1)}%</div>
+                <div className="stat-value">{hasValue(confidence) ? (Number(confidence) * 100).toFixed(1) + '%' : '—'}</div>
               </div>
               <div className="summary-stat">
                 <div className="stat-label">Next Hour Forecast</div>
                 <div className="stat-value">
-                  {ensemble_prediction ? `${Math.round(ensemble_prediction)} kW` : 'Calculating...'}
+                  {hasValue(ensemble_prediction) ? `${Math.round(ensemble_prediction)} kW` : 'Calculating...'}
                 </div>
               </div>
               <div className="summary-stat">
                 <div className="stat-label">Trend</div>
                 <div className="stat-value">
-                  {ensemble_prediction > svr_prediction ? '📈 Rising' : '📉 Stable'}
+                  {hasValue(ensemble_prediction) && hasValue(svr_prediction) && Number(ensemble_prediction) > Number(svr_prediction) ? '📈 Rising' : '📉 Stable'}
                 </div>
               </div>
             </div>

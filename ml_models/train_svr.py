@@ -10,9 +10,9 @@ import sqlite3
 backend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backend')
 db_path = os.path.join(backend_dir, 'database.db')
 conn = sqlite3.connect(db_path)
-data = pd.read_sql_query("SELECT total_voltage, house_count, total_load FROM grid_data ORDER BY tick", conn)
+data = pd.read_sql_query("SELECT total_voltage, total_load FROM grid_data ORDER BY tick", conn)
 conn.close()
-X = data[['total_voltage', 'house_count']]
+X = data[['total_voltage']]
 y = data['total_load']
 
 # Split data

@@ -5,51 +5,15 @@ import numpy as np
 from datetime import datetime
 import sqlite3
 
-def run_netlogo_simulation():
+def run_netlogo_simulation(env_params: dict = None):
     """
     Run NetLogo simulation. If NetLogo is not available, generate synthetic data.
     """
     
-    # Try to find NetLogo installation
-    possible_netlogo_paths = [
-        "C:/Program Files/NetLogo 6.3.0/netlogo-headless.bat",
-        "C:/Program Files/NetLogo 6.4.0/netlogo-headless.bat",
-        "C:/Program Files/NetLogo 6.2.0/netlogo-headless.bat",
-        "/Applications/NetLogo 6.3.0/netlogo-headless.sh",  # macOS
-        "/usr/bin/netlogo-headless"  # Linux
-    ]
-    
-    netlogo_path = None
-    for path in possible_netlogo_paths:
-        if os.path.exists(path):
-            netlogo_path = path
-            break
-    
-    # Get absolute paths
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    backend_dir = os.path.dirname(os.path.dirname(script_dir))
-    project_dir = os.path.dirname(backend_dir)
-    model_path = os.path.join(project_dir, "simulation", "power_grid.nlogo")
-    output_path = os.path.join(project_dir, "simulation", "grid_data.csv")
-    
-    # If NetLogo is available and model exists, run simulation
-    if netlogo_path and os.path.exists(model_path):
-        try:
-            cmd = [
-                netlogo_path,
-                "--model", model_path,
-                "--table", output_path
-            ]
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-            print("NetLogo simulation completed successfully")
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"NetLogo simulation failed: {e.stderr}")
-            # Fall back to synthetic data
-            return generate_synthetic_data()
-    else:
-        print("NetLogo not found or model missing, generating synthetic data")
-        return generate_synthetic_data()
+    # For now, always use synthetic data generation due to NetLogo compatibility issues
+    print("Using synthetic data generation (NetLogo fallback)")
+    return generate_synthetic_data(env_params)
+
 
 def _ensure_zone_tables(conn):
     cur = conn.cursor()
@@ -81,7 +45,7 @@ def _ensure_zone_tables(conn):
     conn.commit()
 
 
-def generate_synthetic_data():
+def generate_synthetic_data(env_params: dict = None):
     """
     Generate synthetic grid data and zone metrics for testing when NetLogo is not available.
     """
@@ -122,7 +86,7 @@ def generate_synthetic_data():
         data = []
         base_voltage = 22000
         base_load = 800
-        base_houses = 100
+        base_houses = 0
         
         for i in range(10):
             tick = next_tick + i
@@ -130,18 +94,27 @@ def generate_synthetic_data():
             # Add some realistic variation
             voltage_variation = np.random.normal(0, 100)
             load_variation = np.random.normal(0, 50)
-            house_variation = np.random.randint(-2, 3)
             
+            # apply environmental factors if provided
+            temp = env_params.get('temperature', 25) if env_params else 25
+            hum = env_params.get('humidity', 60) if env_params else 60
+            light = env_params.get('lighting', 500) if env_params else 500
+
+            # simple environmental effect on load
+            env_load_factor = 1.0 + (max(0, temp - 25) * 0.002) + ((100 - min(100, hum)) * 0.0005) + (max(0, (light - 500)) * 0.00005)
+
             voltage = base_voltage + voltage_variation + (i * 25)
-            load = base_load + load_variation + (i * 10)
-            houses = base_houses + house_variation + (i * 2)
-            
-            total_load = base_load + load_variation + (i * 10)
+            total_load = (base_load + load_variation + (i * 10)) * env_load_factor
+
             data.append({
                 'tick': tick,
                 'total_voltage': round(voltage, 2),
                 'total_load': round(total_load, 2),
-                'house_count': int(houses)
+                'temperature': env_params.get('temperature', 25.0) if env_params else 25.0,
+                'humidity': env_params.get('humidity', 50.0) if env_params else 50.0,
+                'solar_intensity': env_params.get('solar_intensity', 500.0) if env_params else 500.0,
+                'wind_speed': env_params.get('wind_speed', 5.0) if env_params else 5.0,
+                'peak_hours': 1 if (env_params and env_params.get('peak_hours', False)) else 0,
             })
 
             # Distribute load across zones by category weights
@@ -173,16 +146,16 @@ def generate_synthetic_data():
                     "INSERT INTO zone_metrics(zone_id, tick, voltage, load) VALUES(?, ?, ?, ?)",
                     (int(zid), tick, float(round(zvolt, 2)), float(round(zload, 2))),
                 )
-        
+
         # Insert data into database
         df = pd.DataFrame(data)
         df.to_sql('grid_data', conn, if_exists='append', index=False)
         conn.commit()
         conn.close()
-        
+
         print(f"Generated {len(data)} synthetic data points")
         return True
-        
+
     except Exception as e:
         print(f"Error generating synthetic data: {e}")
         return False

@@ -33,8 +33,8 @@ class SVRPredictor:
         self.scaler_path = scaler_path
         self.model = None
         self.scaler = None
-        self.feature_names = ['total_voltage', 'house_count']
-        
+        self.feature_names = ['total_voltage', 'zones_count']
+
         self.load_models()
     
     def load_models(self):
@@ -57,7 +57,7 @@ class SVRPredictor:
             print(f"❌ Error loading models: {e}")
             raise
     
-    def predict_load(self, voltage, house_count):
+    def predict_load(self, voltage, zones_count=None):
         """
         Predict power load for given voltage and house count
         
@@ -69,8 +69,10 @@ class SVRPredictor:
             float: Predicted load value
         """
         try:
-            # Prepare input data
-            input_data = np.array([[voltage, house_count]])
+            # Prepare input data; zones_count is optional (use 0 if not provided)
+            if zones_count is None:
+                zones_count = 0
+            input_data = np.array([[voltage, zones_count]])
             
             # Scale the input
             scaled_input = self.scaler.transform(input_data)
@@ -109,7 +111,7 @@ class SVRPredictor:
             print(f"❌ Error making batch predictions: {e}")
             return None
     
-    def predict_with_confidence(self, voltage, house_count, n_estimations=100):
+    def predict_with_confidence(self, voltage, zones_count=None, n_estimations=100):
         """
         Predict load with confidence estimation using bootstrap-like approach
         
@@ -123,12 +125,12 @@ class SVRPredictor:
         """
         try:
             # Base prediction
-            base_prediction = self.predict_load(voltage, house_count)
+            base_prediction = self.predict_load(voltage, zones_count)
             
             # Create small variations around input for confidence estimation
             np.random.seed(42)
             voltage_variations = np.random.normal(voltage, voltage * 0.01, n_estimations)
-            house_variations = np.random.normal(house_count, house_count * 0.05, n_estimations)
+            house_variations = np.random.normal(zones_count or 0, max(1, (zones_count or 0) * 0.05), n_estimations)
             
             variations = [[v, h] for v, h in zip(voltage_variations, house_variations)]
             variation_predictions = self.predict_batch(variations)

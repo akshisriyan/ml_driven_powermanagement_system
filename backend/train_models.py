@@ -43,70 +43,85 @@ def train_models():
             return False
             
         print(f"Loaded {len(df)} records from database")
-        
-        # Prepare features and target for SVR
-        X = df[['total_voltage', 'house_count']]
+
+        # Prepare features and target for SVR with environmental parameters
+        X = df[['total_voltage', 'temperature', 'humidity', 'solar_intensity', 'wind_speed', 'peak_hours']]
         y = df['total_load']
-        
+
+        # Fill any missing environmental data with reasonable defaults
+        X = X.fillna({
+            'temperature': 25.0,  # 25°C
+            'humidity': 50.0,     # 50%
+            'solar_intensity': 500.0,  # Medium solar intensity
+            'wind_speed': 5.0,    # 5 m/s
+            'peak_hours': 0       # Non-peak by default
+        })
+
         # Split data for training and testing
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
+
         # Train SVR model
         print("Training SVR model...")
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
-        
+
         svr_model = SVR(kernel='rbf', C=100, gamma='scale')
         svr_model.fit(X_train_scaled, y_train)
-        
+
         # Evaluate SVR model
         y_pred = svr_model.predict(X_test_scaled)
         svr_mse = mean_squared_error(y_test, y_pred)
         svr_r2 = r2_score(y_test, y_pred)
-        
+
         print(f"SVR Model - MSE: {svr_mse:.2f}, R²: {svr_r2:.3f}")
-        
+
         # Train ARIMA model
         print("Training ARIMA model...")
         # Use total_load as time series data
         ts_data = df['total_load'].values
-        
+
         # Simple ARIMA model - adjust parameters based on your data
         arima_model = ARIMA(ts_data, order=(1, 1, 1))
         arima_fitted = arima_model.fit()
-        
+
         print(f"ARIMA Model - AIC: {arima_fitted.aic:.2f}")
-        
+
         # Save models
         print("Saving models...")
-        
+
         # Save SVR model and scaler
         joblib.dump(svr_model, os.path.join(models_dir, 'svr_model.pkl'))
         joblib.dump(scaler, os.path.join(models_dir, 'scaler.pkl'))
-        
+
         # Save ARIMA model
         joblib.dump(arima_fitted, os.path.join(models_dir, 'arima_model.pkl'))
-        
+
         print("Models trained and saved successfully!")
-        
+
         # Test loading the models
         print("Testing model loading...")
         loaded_svr = joblib.load(os.path.join(models_dir, 'svr_model.pkl'))
         loaded_scaler = joblib.load(os.path.join(models_dir, 'scaler.pkl'))
         loaded_arima = joblib.load(os.path.join(models_dir, 'arima_model.pkl'))
-        
-        # Make a test prediction
-        test_input = [[22000, 100]]  # Example input
+
+        # Make a test prediction with environmental parameters
+        test_input = [[
+            22000,     # total_voltage
+            25.0,      # temperature (°C)
+            50.0,      # humidity (%)
+            500.0,     # solar_intensity
+            5.0,       # wind_speed (m/s)
+            0          # peak_hours (0 or 1)
+        ]]
         test_scaled = loaded_scaler.transform(test_input)
         test_pred = loaded_svr.predict(test_scaled)
-        
         print(f"Test SVR prediction: {test_pred[0]:.2f}")
-        
+
         # Test ARIMA forecast
         arima_forecast = loaded_arima.forecast(steps=5)
         print(f"Test ARIMA forecast (5 steps): {arima_forecast.tolist()}")
-        
+
         return True
         
     except Exception as e:

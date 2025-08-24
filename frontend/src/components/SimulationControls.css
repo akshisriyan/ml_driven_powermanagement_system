@@ -1,0 +1,105 @@
+.simulation-controls {
+  background: var(--pg-surface);
+  padding: 1.5rem;
+  border-radius: var(--pg-radius);
+  border: 1px solid var(--pg-border);
+  box-shadow: var(--pg-shadow-sm);
+}
+
+.controls-header {
+  margin-bottom: 1.5rem;
+}
+
+.controls-header h3 {
+  color: var(--pg-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.controls-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.param-group {
+  margin-bottom: 1rem;
+}
+
+.param-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--pg-text-soft);
+  font-size: 0.9rem;
+}
+
+.param-input {
+  padding: 0.5rem;
+  border: 1px solid var(--pg-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.param-input:focus {
+  border-color: var(--pg-primary);
+  outline: none;
+}
+
+.param-checkbox {
+  width: 20px;
+  height: 20px;
+  margin-top: 0.5rem;
+}
+
+.run-simulation-btn {
+  background: linear-gradient(135deg, var(--pg-primary) 0%, var(--pg-primary-accent) 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.run-simulation-btn:hover {
+  opacity: 0.9;
+}
+
+.run-simulation-btn.running {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Environmental parameters section */
+.env-params {
+  border-top: 1px solid var(--pg-border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.env-params .param-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Specific styling for peak hours checkbox */
+.param-group.peak-hours {
+  display: flex;
+  align-items: center;
+}
+
+.param-group.peak-hours .param-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}

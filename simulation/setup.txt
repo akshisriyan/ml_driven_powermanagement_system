@@ -1,0 +1,22 @@
+# NetLogo setup configuration
+# Experiment configuration for power grid simulation
+
+experiment power_grid_experiment
+  setup [
+    clear-all
+    setup
+  ]
+  go [
+    repeat 10 [
+      go
+      update-outputs
+    ]
+  ]
+  timeLimit 100
+  metric "total-voltage"
+  metric "total-load"
+  metric "temperature"
+  metric "humidity"
+  metric "solar-intensity"
+  metric "wind-speed"
+  metric "peak-hours"

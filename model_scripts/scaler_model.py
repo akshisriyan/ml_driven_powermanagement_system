@@ -24,10 +24,11 @@ class GridDataScaler:
             # Default path to the backend models directory
             script_dir = os.path.dirname(os.path.abspath(__file__))
             scaler_path = os.path.join(script_dir, '..', 'backend', 'models', 'scaler.pkl')
-        
+
         self.scaler_path = scaler_path
         self.scaler = None
-        self.feature_names = ['total_voltage', 'house_count']
+        self.feature_names = ['total_voltage', 'zones_count']
+
         self.load_scaler()
     
     def load_scaler(self):
@@ -99,18 +100,18 @@ class GridDataScaler:
             print(f"❌ Error inverse transforming data: {e}")
             return None
     
-    def normalize_grid_data(self, voltage, house_count):
+    def normalize_grid_data(self, voltage, zones_count):
         """
-        Normalize grid data (voltage and house count)
+        Normalize grid data (voltage and zones count)
         
         Args:
             voltage (float): Total voltage value
-            house_count (int): Number of houses
+            zones_count (int): Number of zones
             
         Returns:
             numpy.ndarray: Normalized data ready for ML model input
         """
-        data = [[voltage, house_count]]
+        data = [[voltage, zones_count]]
         return self.transform(data)
     
     def denormalize_predictions(self, predictions, feature_index=None):
@@ -149,22 +150,22 @@ class GridDataScaler:
     def create_sample_data(self, n_samples=5):
         """Create sample normalized data for testing"""
         np.random.seed(42)
-        
+
         # Generate random data in typical ranges
         voltages = np.random.uniform(20000, 25000, n_samples)
-        house_counts = np.random.randint(80, 150, n_samples)
-        
+        zones_counts = np.random.randint(5, 20, n_samples)
+
         sample_data = []
-        for v, h in zip(voltages, house_counts):
-            original = [v, h]
-            normalized = self.normalize_grid_data(v, h)[0]
+        for v, z in zip(voltages, zones_counts):
+            original = [v, z]
+            normalized = self.normalize_grid_data(v, z)[0]
             sample_data.append({
                 'original': original,
                 'normalized': normalized.tolist(),
                 'voltage': v,
-                'house_count': h
+                'zones_count': z
             })
-        
+
         return sample_data
 
 def main():
@@ -184,11 +185,11 @@ def main():
     # Test with sample data
     print("\n🧪 Sample Data Transformation:")
     sample_voltage = 22500.0
-    sample_house_count = 120
-    
+    sample_zones_count = 12
+
     # Normalize
-    normalized = scaler.normalize_grid_data(sample_voltage, sample_house_count)
-    print(f"   Original: [voltage={sample_voltage}, houses={sample_house_count}]")
+    normalized = scaler.normalize_grid_data(sample_voltage, sample_zones_count)
+    print(f"   Original: [voltage={sample_voltage}, zones={sample_zones_count}]")
     print(f"   Normalized: {normalized[0]}")
     
     # Denormalize back
@@ -200,7 +201,7 @@ def main():
     samples = scaler.create_sample_data(3)
     for i, sample in enumerate(samples):
         print(f"   Sample {i+1}:")
-        print(f"     Original: V={sample['voltage']:.1f}, H={sample['house_count']}")
+        print(f"     Original: V={sample['voltage']:.1f}, Zones={sample['zones_count']}")
         print(f"     Normalized: [{sample['normalized'][0]:.3f}, {sample['normalized'][1]:.3f}]")
     
     # Test batch processing

@@ -22,7 +22,7 @@ export const gridService = {
         tick: 100,
         total_voltage: 22500,
         total_load: 875,
-        house_count: 120,
+        zones_count: 120,
         timestamp: new Date().toISOString()
       };
     }
@@ -70,11 +70,11 @@ export const gridService = {
           tick: i,
           total_voltage: 22000 + Math.random() * 2000,
           total_load: 800 + Math.random() * 400,
-          house_count: 100 + i,
+          zones_count: 100 + i,
           timestamp: new Date(Date.now() - (limit - i) * 60000).toISOString()
         });
       }
-      return { data: mockData };
+      return mockData;
     }
   },
 
@@ -93,34 +93,33 @@ export const gridService = {
         averages: {
           voltage: 22250,
           load: 950,
-          houses: 125
+          zones: 125
         },
         timestamp: new Date().toISOString()
       };
     }
   },
-      console.error('Error fetching historical data:', error);
-      throw error;
-    }
-  },
-  // Get system health metrics
-  getSystemHealth: async () => {
+  // Get model performance metrics
+  getModelPerformance: async () => {
     try {
-      const response = await api.get('/system-health');
+      const response = await api.get('/model-performance');
       return response.data;
     } catch (error) {
-      console.error('Error fetching system health:', error);
-      // Return mock health data if API fails
+      console.error('Error fetching model performance:', error);
+      // Return mock performance data if API fails
       return {
-        status: "healthy",
-        total_records: 150,
-        latest_tick: 149,
-        averages: {
-          voltage: 22250,
-          load: 950,
-          houses: 125
+        svr_model: {
+          accuracy: 85.2,
+          mae: 15.3,
+          rmse: 22.1,
+          last_trained: new Date().toISOString()
         },
-        timestamp: new Date().toISOString()
+        arima_model: {
+          mae: 12.4,
+          rmse: 18.7,
+          aic: 1245.6,
+          last_trained: new Date().toISOString()
+        }
       };
     }
   },

@@ -10,6 +10,7 @@ import datetime
 import warnings
 import io
 from ..utils.netlogo import run_netlogo_simulation, backfill_zone_metrics_for_recent
+from ml_models.sarimax_forecaster import SARIMAXForecaster
 
 # Try to import statsmodels, if not available, provide fallback
 try:
@@ -24,7 +25,15 @@ warnings.filterwarnings('ignore')
 router = APIRouter()
 
 class GridParams(BaseModel):
-    house_growth_rate: float
+    house_growth_rate: float | None = None
+    temperature: float = 25.0
+    humidity: float = 50.0
+    solar_intensity: float = 500.0
+    wind_speed: float = 5.0
+    peak_hours: bool = False
+    steps: int = 100
+    houses: int = 120
+    voltage: float = 22500
 
 def get_database_path():
     """Get the absolute path to the database file"""
@@ -54,28 +63,28 @@ def get_grid_status():
 def get_system_health():
     try:
         conn = sqlite3.connect(get_database_path())
-        
+
         # Get total record count
         total_count = pd.read_sql_query("SELECT COUNT(*) as count FROM grid_data", conn)['count'].iloc[0]
-        
+
         # Get latest record
         latest_df = pd.read_sql_query("SELECT * FROM grid_data ORDER BY tick DESC LIMIT 1", conn)
-        
-        # Get averages
-        avg_df = pd.read_sql_query("SELECT AVG(total_voltage) as avg_voltage, AVG(total_load) as avg_load, AVG(house_count) as avg_houses FROM grid_data", conn)
-        
+
+        # Get averages (house_count removed; system uses zones)
+        avg_df = pd.read_sql_query("SELECT AVG(total_voltage) as avg_voltage, AVG(total_load) as avg_load FROM grid_data", conn)
+
         conn.close()
-        
+
         if latest_df.empty:
             return {
                 "status": "warning",
                 "total_records": 0,
                 "latest_tick": 0,
-                "averages": {"voltage": 0, "load": 0, "houses": 0},
+                "averages": {"voltage": 0, "load": 0},
                 "timestamp": pd.Timestamp.now().isoformat()
             }
-        
-    # Determine system health status
+
+        # Determine system health status
         avg_voltage = avg_df['avg_voltage'].iloc[0]
         avg_load = avg_df['avg_load'].iloc[0]
         status = "healthy"
@@ -107,8 +116,7 @@ def get_system_health():
             "latest_tick": int(latest_df['tick'].iloc[0]),
             "averages": {
                 "voltage": float(avg_df['avg_voltage'].iloc[0]),
-                "load": float(avg_df['avg_load'].iloc[0]),
-                "houses": float(avg_df['avg_houses'].iloc[0])
+                "load": float(avg_df['avg_load'].iloc[0])
             },
             "timestamp": pd.Timestamp.now().isoformat(),
             "generator": {"enabled": generator_enabled},
@@ -157,26 +165,49 @@ def run_simulation(params: GridParams):
         except Exception:
             pass
 
-        # Run NetLogo simulation
-        run_netlogo_simulation()
+        # Run NetLogo simulation; pass environment parameters to synthetic fallback
+        env = {
+            'temperature': params.temperature, 
+            'humidity': params.humidity, 
+            'solar_intensity': params.solar_intensity,
+            'wind_speed': params.wind_speed,
+            'peak_hours': params.peak_hours
+        }
+        try:
+            run_netlogo_simulation(env_params=env)
+        except Exception as e:
+            print(f"Simulation error: {e}")
+            # If NetLogo not available, call synthetic generator directly with env params
+            from ..utils.netlogo import generate_synthetic_data
+            generate_synthetic_data(env_params=env)
         # Backfill zone metrics from recent grid data
         try:
             backfill_zone_metrics_for_recent(50)
         except Exception:
             pass
 
-        # Import CSV results if present
+        # Import CSV results if present and non-empty
         if os.path.exists(csv_path):
             try:
-                df = pd.read_csv(csv_path)
+                # If file is empty, skip reading and consider synthetic generator results
+                if os.path.getsize(csv_path) == 0:
+                    return {"status": "Simulation completed (no CSV produced; synthetic generation applied)"}
+
+                try:
+                    df = pd.read_csv(csv_path)
+                except pd.errors.EmptyDataError:
+                    return {"status": "Simulation completed (CSV empty; synthetic generation applied)"}
+
+                # If dataframe has no columns, skip gracefully
+                if df is None or df.shape[1] == 0:
+                    return {"status": "Simulation completed (CSV had no columns; synthetic generation applied)"}
+
                 # Normalize columns
                 col_map = {
                     'voltage': 'total_voltage',
                     'total_voltage': 'total_voltage',
                     'load': 'total_load',
                     'total_load': 'total_load',
-                    'houses': 'house_count',
-                    'house_count': 'house_count',
                 }
                 rename = {}
                 for c in df.columns:
@@ -184,12 +215,14 @@ def run_simulation(params: GridParams):
                     if k in col_map:
                         rename[c] = col_map[k]
                 df = df.rename(columns=rename)
+
                 # Required columns
                 for req in ['total_voltage', 'total_load']:
                     if req not in df.columns:
-                        raise ValueError(f'Missing required column: {req}')
-                if 'house_count' not in df.columns:
-                    df['house_count'] = 0
+                        # If CSV doesn't contain required simulation columns, skip import
+                        return {"status": "Simulation completed (CSV did not contain required columns; synthetic generation applied)"}
+
+                # house_count removed; system uses zones
                 if 'tick' not in df.columns:
                     # create sequential ticks
                     conn_tmp = sqlite3.connect(get_database_path())
@@ -200,36 +233,143 @@ def run_simulation(params: GridParams):
                     df['tick'] = range(start, start + len(df))
 
                 conn = sqlite3.connect(get_database_path())
-                df[['tick', 'total_voltage', 'total_load', 'house_count']].to_sql('grid_data', conn, if_exists='append', index=False)
+                df[['tick', 'total_voltage', 'total_load']].to_sql('grid_data', conn, if_exists='append', index=False)
                 conn.close()
             except Exception as ie:
                 raise HTTPException(status_code=500, detail=f'Failed to import simulation CSV: {ie}')
+
         return {"status": "Simulation completed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/forecast")
-def get_forecast():
+def get_forecast(steps: int = 12):
+    """
+    Combined forecast endpoint.
+    - SVR uses the saved scaler and model on latest features.
+    - ARIMA is fit on recent total_load values so it reflects new simulation data.
+    Returns both single-step predictions and a short ARIMA horizon for charts.
+    """
     try:
         models_path = get_models_path()
         svr = joblib.load(os.path.join(models_path, 'svr_model.pkl'))
         scaler = joblib.load(os.path.join(models_path, 'scaler.pkl'))
-        arima = joblib.load(os.path.join(models_path, 'arima_model.pkl'))
 
-        # Get latest grid data
+        # Latest row for SVR features
         conn = sqlite3.connect(get_database_path())
-        df = pd.read_sql_query("SELECT * FROM grid_data ORDER BY tick DESC LIMIT 1", conn)
+        latest_df = pd.read_sql_query("SELECT * FROM grid_data ORDER BY tick DESC LIMIT 1", conn)
+
+        # Recent history for ARIMA (use load as target)
+        hist_df = pd.read_sql_query(
+            "SELECT total_load FROM grid_data ORDER BY tick DESC LIMIT 200",
+            conn,
+        )
         conn.close()
 
-        # SVR prediction
-        X = df[['total_voltage', 'house_count']]
+        if latest_df.empty:
+            raise HTTPException(status_code=400, detail="No grid data available")
+
+        # load models and prefer SARIMAX if available
+        sarimax = SARIMAXForecaster()
+
+        # SVR prediction: adapt to model feature size (may be 1 or 2 features).
+        # Prefer ['total_voltage', 'house_count'] if present, otherwise use ['total_voltage'].
+        X_cols = ['total_voltage']
+        if 'house_count' in latest_df.columns:
+            X_cols.append('house_count')
+        X = latest_df[X_cols]
+        # Ensure the feature count matches what the scaler/model expect. If needed pad with zeros or trim.
+        try:
+            n_features = getattr(scaler, 'n_features_in_', None)
+            if n_features is None and hasattr(scaler, 'mean_'):
+                n_features = len(scaler.mean_)
+            if n_features is not None and X.shape[1] != n_features:
+                # Pad with zeros if model expects more features
+                if X.shape[1] < n_features:
+                    import numpy as _np
+                    pad = _np.zeros((X.shape[0], n_features - X.shape[1]))
+                    X = _np.hstack([X.values, pad])
+                else:
+                    # Trim extra columns
+                    X = X.iloc[:, :n_features].values
+        except Exception:
+            # Fallback: convert to numpy array
+            X = X.values
+
         X_scaled = scaler.transform(X)
-        svr_pred = svr.predict(X_scaled)[0]
+        svr_pred = float(svr.predict(X_scaled)[0])
 
-        # ARIMA forecast
-        arima_pred = arima.forecast(steps=10).tolist()
+        # SARIMAX forecast (if model exists)
+        sarimax_pred = None
+        try:
+            sarimax_pred = sarimax.forecast(steps=steps)
+        except Exception:
+            sarimax_pred = None
 
-        return {"svr_prediction": svr_pred, "arima_forecast": arima_pred}
+        # ARIMA prediction using recent data; fallback to moving average if statsmodels unavailable
+        arima_next = None
+        arima_horizon = []
+        confidence = 0.6  # base default
+
+        try:
+            series = hist_df.iloc[::-1]['total_load'].astype(float).reset_index(drop=True)
+            if len(series) >= 10 and STATSMODELS_AVAILABLE:
+                # Fit a lightweight ARIMA; choose among a few small orders
+                best_aic = float('inf')
+                best_model = None
+                for order in [(1,1,1), (2,1,1), (1,1,0)]:
+                    try:
+                        m = ARIMA(series, order=order)
+                        fitted = m.fit()
+                        if fitted.aic < best_aic:
+                            best_aic = fitted.aic
+                            best_model = fitted
+                    except Exception:
+                        continue
+                if best_model is None:
+                    best_model = ARIMA(series, order=(1,1,1)).fit()
+
+                fcst_obj = best_model.get_forecast(steps=10)
+                arima_vals = fcst_obj.predicted_mean.tolist()
+                conf_int = fcst_obj.conf_int()
+                arima_horizon = arima_vals
+                arima_next = float(arima_vals[0])
+                # Confidence inversely related to relative interval width
+                mean_level = max(1.0, float(series.iloc[-1]))
+                width = float(conf_int.iloc[0, 1] - conf_int.iloc[0, 0])
+                rel_width = min(1.0, max(0.0, width / mean_level))
+                confidence = float(max(0.1, 1.0 - rel_width))
+            else:
+                # Fallback: simple moving average of last N
+                window = min(10, len(series)) if len(series) > 0 else 0
+                if window > 0:
+                    arima_next = float(series.tail(window).mean())
+                    # Produce a flat short horizon
+                    arima_horizon = [arima_next for _ in range(10)]
+                    confidence = 0.4
+        except Exception:
+            # Keep defaults if anything goes wrong
+            pass
+
+        # If ARIMA couldn't be computed, align with SVR as a crude fallback
+        if arima_next is None:
+            arima_next = svr_pred
+            arima_horizon = [svr_pred for _ in range(10)]
+
+        # Simple ensemble: average of SVR and ARIMA
+        ensemble_pred = float((svr_pred + arima_next) / 2.0)
+
+        return {
+            "svr_prediction": svr_pred,
+            "arima_prediction": arima_next,
+            "sarimax_prediction": sarimax_pred,
+            "ensemble_prediction": ensemble_pred,
+            "confidence": confidence,
+            # keep backward compatibility with existing UI pieces
+            "arima_forecast": arima_horizon,
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -432,175 +572,109 @@ def get_forecast_summary():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating forecast summary: {str(e)}")
 
+
 @router.post("/upload-excel")
 async def upload_excel_file(file: UploadFile = File(...)):
-    """Upload and process Excel file"""
+    """Upload and process Excel file (voltage & load). Zones are managed via the zones API."""
     try:
-        # Validate file type
         if not file.filename.endswith(('.xlsx', '.xls')):
             raise HTTPException(status_code=400, detail="Invalid file type. Please upload an Excel file.")
-        
-        # Read the Excel file
+
         contents = await file.read()
-        
         try:
-            # Try to read as Excel
             df = pd.read_excel(io.BytesIO(contents))
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to read Excel file: {str(e)}")
-        
-        # Validate required columns (adjust based on your needs)
-        required_columns = ['voltage', 'load', 'houses']  # Example columns
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        
-        if missing_columns:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Missing required columns: {', '.join(missing_columns)}"
-            )
-        
-        # Process and store data (example - adjust based on your schema)
+
+        # Require basic columns
+        required = ['voltage', 'load']
+        missing = [c for c in required if c not in df.columns]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Missing required columns: {', '.join(missing)}")
+
+        rows = []
+        for _, r in df.iterrows():
+            rows.append({'tick': None, 'total_voltage': r.get('voltage', 0), 'total_load': r.get('load', 0), 'timestamp': datetime.datetime.now().isoformat()})
+
         conn = sqlite3.connect(get_database_path())
-        
-        # Convert DataFrame to match your schema
-        processed_data = []
-        for _, row in df.iterrows():
-            processed_data.append({
-                'tick': len(processed_data) + 1,
-                'total_voltage': row.get('voltage', 0),
-                'total_load': row.get('load', 0),
-                'house_count': row.get('houses', 0),
-                'timestamp': datetime.datetime.now().isoformat()
-            })
-        
-        # Insert data into database
-        processed_df = pd.DataFrame(processed_data)
-        processed_df.to_sql('grid_data', conn, if_exists='append', index=False)
+        cur = conn.cursor()
+        cur.execute('SELECT COALESCE(MAX(tick), 0) FROM grid_data')
+        start = cur.fetchone()[0] + 1
+        for i, row in enumerate(rows):
+            row['tick'] = start + i
+        if rows:
+            pd.DataFrame(rows).to_sql('grid_data', conn, if_exists='append', index=False)
         conn.close()
-        
-        return {
-            "message": "File uploaded and processed successfully",
-            "rows_processed": len(processed_data),
-            "filename": file.filename
-        }
-        
+        return {"message": "File uploaded and processed successfully", "rows_processed": len(rows), "filename": file.filename}
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
 
 @router.get("/export-data")
 async def export_data():
     """Export all system data as CSV"""
     try:
         conn = sqlite3.connect(get_database_path())
-        
-        # Get all data from database
         grid_data = pd.read_sql_query("SELECT * FROM grid_data ORDER BY tick", conn)
-        
-        # Get summary statistics
         summary_stats = pd.read_sql_query("""
-            SELECT 
+            SELECT
                 COUNT(*) as total_records,
                 AVG(total_voltage) as avg_voltage,
                 AVG(total_load) as avg_load,
-                AVG(house_count) as avg_houses,
                 MIN(total_voltage) as min_voltage,
                 MAX(total_voltage) as max_voltage,
                 MIN(total_load) as min_load,
                 MAX(total_load) as max_load
             FROM grid_data
         """, conn)
-        
         conn.close()
-        
-        # Create CSV content
+
         output = io.StringIO()
-        
-        # Write summary section
         output.write("POWER GRID SYSTEM SUMMARY\n")
         output.write("=" * 50 + "\n")
         output.write(f"Export Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         output.write(f"Total Records: {summary_stats['total_records'].iloc[0]}\n")
         output.write(f"Average Voltage: {summary_stats['avg_voltage'].iloc[0]:.2f}V\n")
         output.write(f"Average Load: {summary_stats['avg_load'].iloc[0]:.2f}kW\n")
-        output.write(f"Average Houses: {summary_stats['avg_houses'].iloc[0]:.0f}\n")
         output.write(f"Voltage Range: {summary_stats['min_voltage'].iloc[0]:.2f}V - {summary_stats['max_voltage'].iloc[0]:.2f}V\n")
         output.write(f"Load Range: {summary_stats['min_load'].iloc[0]:.2f}kW - {summary_stats['max_load'].iloc[0]:.2f}kW\n")
         output.write("\n")
-        
-        # Write detailed data section
         output.write("DETAILED GRID DATA\n")
         output.write("=" * 50 + "\n")
-        
-        # Convert DataFrame to CSV
         grid_data.to_csv(output, index=False)
-        
-        # Get the CSV content
         csv_content = output.getvalue()
         output.close()
-        
-        # Create response
-        response = StreamingResponse(
-            io.BytesIO(csv_content.encode('utf-8')),
-            media_type='text/csv',
-            headers={
-                'Content-Disposition': f'attachment; filename="power_grid_export_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
-            }
-        )
-        
-        return response
-        
+        return StreamingResponse(io.BytesIO(csv_content.encode('utf-8')), media_type='text/csv', headers={
+            'Content-Disposition': f'attachment; filename="power_grid_export_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exporting data: {str(e)}")
+
 
 @router.get("/data-statistics")
 async def get_data_statistics():
     """Get statistics about the stored data"""
     try:
         conn = sqlite3.connect(get_database_path())
-        
-        # Get basic statistics
         stats = pd.read_sql_query("""
             SELECT 
                 COUNT(*) as total_records,
                 MIN(created_at) as oldest_record,
                 MAX(created_at) as newest_record,
                 AVG(total_voltage) as avg_voltage,
-                AVG(total_load) as avg_load,
-                AVG(house_count) as avg_houses
+                AVG(total_load) as avg_load
             FROM grid_data
         """, conn)
-        
         conn.close()
-        
         if stats.empty or stats['total_records'].iloc[0] == 0:
-            return {
-                "total_records": 0,
-                "oldest_record": None,
-                "newest_record": None,
-                "avg_voltage": 0,
-                "avg_load": 0,
-                "avg_houses": 0,
-                "estimated_size": "0 KB"
-            }
-        
-        # Estimate file size (rough calculation)
-        estimated_size_kb = stats['total_records'].iloc[0] * 0.1  # Rough estimate
+            return {"total_records": 0, "oldest_record": None, "newest_record": None, "avg_voltage": 0, "avg_load": 0, "estimated_size": "0 KB"}
+        estimated_size_kb = stats['total_records'].iloc[0] * 0.1
         size_unit = "KB"
         if estimated_size_kb > 1024:
             estimated_size_kb = estimated_size_kb / 1024
             size_unit = "MB"
-        
-        return {
-            "total_records": int(stats['total_records'].iloc[0]),
-            "oldest_record": stats['oldest_record'].iloc[0],
-            "newest_record": stats['newest_record'].iloc[0],
-            "avg_voltage": float(stats['avg_voltage'].iloc[0]),
-            "avg_load": float(stats['avg_load'].iloc[0]),
-            "avg_houses": float(stats['avg_houses'].iloc[0]),
-            "estimated_size": f"{estimated_size_kb:.1f} {size_unit}"
-        }
-        
+        return {"total_records": int(stats['total_records'].iloc[0]), "oldest_record": stats['oldest_record'].iloc[0], "newest_record": stats['newest_record'].iloc[0], "avg_voltage": float(stats['avg_voltage'].iloc[0]), "avg_load": float(stats['avg_load'].iloc[0]), "estimated_size": f"{estimated_size_kb:.1f} {size_unit}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting statistics: {str(e)}")

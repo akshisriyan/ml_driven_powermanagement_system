@@ -40,7 +40,8 @@ const GridStatus = ({ gridData, loading }) => {
 
   const voltage = gridData?.total_voltage || 0;
   const load = gridData?.total_load || 0;
-  const houses = gridData?.house_count || 0; // kept for backward compatibility
+  // gridData no longer provides house_count; zones are retrieved separately
+  const houses = null;
   const tick = gridData?.tick || 0;
 
   // Generate sample detailed data for the table

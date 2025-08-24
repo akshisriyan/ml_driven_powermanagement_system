@@ -40,52 +40,52 @@ class PowerGridAnalyzer:
             print(f"❌ Error initializing models: {e}")
             raise
     
-    def comprehensive_analysis(self, voltage=22500, house_count=120):
+    def comprehensive_analysis(self, voltage=22500, zones_count=12):
         """
         Perform comprehensive grid analysis
         
         Args:
             voltage (float): Current voltage
-            house_count (int): Number of houses
+            zones_count (int): Number of zones
         """
         print(f"\n🔍 Comprehensive Power Grid Analysis")
-        print(f"📊 Input Parameters: Voltage={voltage}V, Houses={house_count}")
+        print(f"📊 Input Parameters: Voltage={voltage}V, Zones={zones_count}")
         print("=" * 60)
-        
+
         # 1. Current Load Prediction using SVR
         print("\n1️⃣ CURRENT LOAD PREDICTION (SVR)")
         print("-" * 40)
-        current_load = self.svr_predictor.predict_with_confidence(voltage, house_count)
+        current_load = self.svr_predictor.predict_with_confidence(voltage, zones_count)
         if current_load:
             print(f"   💡 Predicted Current Load: {current_load['prediction']:.2f} units")
             print(f"   📊 Confidence Range: {current_load.get('lower_bound', 0):.1f} - {current_load.get('upper_bound', 0):.1f} units")
             print(f"   🎯 Accuracy: ±{current_load.get('confidence_interval', 0):.2f} units")
-        
+
         # 2. Data Scaling and Normalization
         print("\n2️⃣ DATA PREPROCESSING (SCALER)")
         print("-" * 40)
-        normalized_data = self.scaler.normalize_grid_data(voltage, house_count)
+        normalized_data = self.scaler.normalize_grid_data(voltage, zones_count)
         if normalized_data is not None:
-            print(f"   📥 Original Data: [Voltage={voltage}, Houses={house_count}]")
+            print(f"   📥 Original Data: [Voltage={voltage}, Zones={zones_count}]")
             print(f"   🔄 Normalized Data: [{normalized_data[0][0]:.3f}, {normalized_data[0][1]:.3f}]")
-            
+
             # Show scaler statistics
             stats = self.scaler.get_scaler_stats()
             print(f"   📊 Scaling Statistics:")
             print(f"      Mean: {stats['mean_values']}")
             print(f"      Scale: {stats['scale_values']}")
-        
+
         # 3. Voltage Forecasting using ARIMA
         print("\n3️⃣ VOLTAGE FORECASTING (ARIMA)")
         print("-" * 40)
-        
+
         # 1-hour forecast
         forecast_1h = self.arima_forecaster.forecast_1_hour()
         if forecast_1h:
             print(f"   ⏰ 1-Hour Forecast:")
             print(f"      Predicted Voltage: {forecast_1h['forecast_values'][0]:.2f}V")
             print(f"      Confidence Range: {forecast_1h['lower_ci'][0]:.2f} - {forecast_1h['upper_ci'][0]:.2f}V")
-        
+
         # 24-hour forecast
         forecast_24h = self.arima_forecaster.forecast_1_day()
         if forecast_24h:
@@ -96,7 +96,7 @@ class PowerGridAnalyzer:
             print(f"      Average Voltage: {avg_voltage:.2f}V")
             print(f"      Voltage Range: {min_voltage:.2f} - {max_voltage:.2f}V")
             print(f"      First 6 hours: {forecast_24h['forecast_values'][:6]}")
-        
+
         return {
             'current_load': current_load,
             'normalized_data': normalized_data,
@@ -110,11 +110,11 @@ class PowerGridAnalyzer:
         print("=" * 60)
         
         scenarios = [
-            {'name': 'Low Demand Period', 'voltage': 21500, 'houses': 90},
-            {'name': 'Normal Operation', 'voltage': 22500, 'houses': 120},
-            {'name': 'High Demand Period', 'voltage': 23500, 'houses': 140},
-            {'name': 'Peak Load Condition', 'voltage': 24000, 'houses': 160},
-            {'name': 'Emergency Condition', 'voltage': 20500, 'houses': 100}
+            {'name': 'Low Demand Period', 'voltage': 21500, 'zones': 9},
+            {'name': 'Normal Operation', 'voltage': 22500, 'zones': 12},
+            {'name': 'High Demand Period', 'voltage': 23500, 'zones': 14},
+            {'name': 'Peak Load Condition', 'voltage': 24000, 'zones': 16},
+            {'name': 'Emergency Condition', 'voltage': 20500, 'zones': 10}
         ]
         
         results = []
@@ -123,21 +123,21 @@ class PowerGridAnalyzer:
             print("-" * 40)
             
             # SVR Prediction
-            load_pred = self.svr_predictor.predict_load(scenario['voltage'], scenario['houses'])
+            load_pred = self.svr_predictor.predict_load(scenario['voltage'], scenario['zones'])
             
             # Data normalization
-            norm_data = self.scaler.normalize_grid_data(scenario['voltage'], scenario['houses'])
+            norm_data = self.scaler.normalize_grid_data(scenario['voltage'], scenario['zones'])
             
             result = {
                 'scenario': scenario['name'],
                 'voltage': scenario['voltage'],
-                'houses': scenario['houses'],
+                'zones': scenario['zones'],
                 'predicted_load': load_pred,
                 'normalized': norm_data[0].tolist() if norm_data is not None else None
             }
             results.append(result)
             
-            print(f"   🏠 Houses: {scenario['houses']}")
+            print(f"   � Zones: {scenario['zones']}")
             print(f"   ⚡ Voltage: {scenario['voltage']}V")
             print(f"   💡 Predicted Load: {load_pred:.2f} units" if load_pred else "   ❌ Prediction failed")
             if norm_data is not None:
@@ -173,14 +173,14 @@ class PowerGridAnalyzer:
                     for i, (val, low, high) in enumerate(zip(values, lower_ci, upper_ci)):
                         print(f"      Hour {i+1}: {val:.2f}V (CI: {low:.2f} - {high:.2f})")
     
-    def generate_report(self, voltage=22500, house_count=120):
+    def generate_report(self, voltage=22500, zones_count=12):
         """Generate a comprehensive analysis report"""
         print(f"\n📋 POWER GRID ANALYSIS REPORT")
         print(f"🕐 Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 70)
         
         # Perform analysis
-        analysis = self.comprehensive_analysis(voltage, house_count)
+        analysis = self.comprehensive_analysis(voltage, zones_count)
         
         # Additional insights
         print(f"\n💡 INSIGHTS AND RECOMMENDATIONS")

@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
+import './SimulationControls.css';
 
 const SimulationControls = ({ onRunSimulation, loading }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [simulationParams, setSimulationParams] = useState({
     steps: 100,
-  houses: 120,
+    houses: 120,
     voltage: 22500,
     house_growth_rate: 0.05, // 5% default growth rate (decimal)
+    temperature: 25.0,      // Default temperature in °C
+    humidity: 50.0,        // Default humidity in %
+    solar_intensity: 500.0, // Default solar intensity
+    wind_speed: 5.0,       // Default wind speed in m/s
+    peak_hours: false      // Default not peak hours
   });
 
   const handleRunSimulation = async () => {
@@ -14,9 +20,17 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
     
     setIsRunning(true);
     try {
-      // Backend expects only { house_growth_rate: float }
+      // Send all simulation parameters including environmental ones
       await onRunSimulation({
         house_growth_rate: Number(simulationParams.house_growth_rate) || 0,
+        temperature: Number(simulationParams.temperature) || 25.0,
+        humidity: Number(simulationParams.humidity) || 50.0,
+        solar_intensity: Number(simulationParams.solar_intensity) || 500.0,
+        wind_speed: Number(simulationParams.wind_speed) || 5.0,
+        peak_hours: Boolean(simulationParams.peak_hours),
+        steps: Number(simulationParams.steps),
+        houses: Number(simulationParams.houses),
+        voltage: Number(simulationParams.voltage)
       });
     } catch (error) {
       console.error('Simulation failed:', error);
@@ -28,7 +42,11 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
   const handleParamChange = (param, value) => {
     setSimulationParams(prev => ({
       ...prev,
-      [param]: param === 'house_growth_rate' ? (parseFloat(value) || 0) : (parseInt(value) || 0)
+      [param]: param === 'peak_hours' 
+        ? Boolean(value)
+        : param === 'house_growth_rate' || param === 'temperature' || param === 'humidity' || param === 'wind_speed'
+          ? (parseFloat(value) || 0)
+          : (parseInt(value) || 0)
     }));
   };
 
@@ -92,6 +110,78 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
               min="0"
               max="1"
               className="param-input"
+            />
+          </label>
+        </div>
+
+        <div className="param-group">
+          <label className="param-label">
+            Temperature (°C):
+            <input
+              type="number"
+              step="0.1"
+              value={simulationParams.temperature}
+              onChange={(e) => handleParamChange('temperature', e.target.value)}
+              min="0"
+              max="50"
+              className="param-input"
+            />
+          </label>
+        </div>
+
+        <div className="param-group">
+          <label className="param-label">
+            Humidity (%):
+            <input
+              type="number"
+              step="0.1"
+              value={simulationParams.humidity}
+              onChange={(e) => handleParamChange('humidity', e.target.value)}
+              min="0"
+              max="100"
+              className="param-input"
+            />
+          </label>
+        </div>
+
+        <div className="param-group">
+          <label className="param-label">
+            Solar Intensity:
+            <input
+              type="number"
+              step="1"
+              value={simulationParams.solar_intensity}
+              onChange={(e) => handleParamChange('solar_intensity', e.target.value)}
+              min="0"
+              max="1000"
+              className="param-input"
+            />
+          </label>
+        </div>
+
+        <div className="param-group">
+          <label className="param-label">
+            Wind Speed (m/s):
+            <input
+              type="number"
+              step="0.1"
+              value={simulationParams.wind_speed}
+              onChange={(e) => handleParamChange('wind_speed', e.target.value)}
+              min="0"
+              max="30"
+              className="param-input"
+            />
+          </label>
+        </div>
+
+        <div className="param-group">
+          <label className="param-label">
+            Peak Hours:
+            <input
+              type="checkbox"
+              checked={simulationParams.peak_hours}
+              onChange={(e) => handleParamChange('peak_hours', e.target.checked)}
+              className="param-checkbox"
             />
           </label>
         </div>

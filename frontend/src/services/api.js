@@ -49,7 +49,6 @@ export const gridService = {
         tick: 100,
         total_voltage: 22500,
         total_load: 875,
-        house_count: 120,
         timestamp: new Date().toISOString()
       };
     }
@@ -75,9 +74,12 @@ export const gridService = {
       console.error('Error fetching forecast:', error);
       // Return mock forecast data if API fails
       return {
-        svr_prediction: [890, 905, 920, 935, 950],
+        svr_prediction: 900,
+        arima_prediction: 895,
+        ensemble_prediction: 897.5,
+        confidence: 0.8,
+        // compatibility for any components using a horizon
         arima_forecast: [885, 900, 915, 930, 945],
-        confidence_interval: [0.85, 0.92],
         forecast_period: "next_5_hours"
       };
     }
@@ -97,11 +99,10 @@ export const gridService = {
           tick: i,
           total_voltage: 22000 + Math.random() * 2000,
           total_load: 800 + Math.random() * 400,
-          house_count: 100 + i,
           timestamp: new Date(Date.now() - (limit - i) * 60000).toISOString()
         });
       }
-      return { data: mockData };
+      return mockData;
     }
   },
 
@@ -119,8 +120,7 @@ export const gridService = {
         latest_tick: 149,
         averages: {
           voltage: 22250,
-          load: 950,
-          houses: 125
+          load: 950
         },
         timestamp: new Date().toISOString()
       };
