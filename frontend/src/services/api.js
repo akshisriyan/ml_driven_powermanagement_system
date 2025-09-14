@@ -40,14 +40,14 @@ export const gridService = {
   // Get current grid status
   getGridStatus: async () => {
     try {
-      const response = await api.get('/grid-status');
+      const response = await api.get('/api/grid/grid-status');
       return response.data;
     } catch (error) {
       console.error('Error fetching grid status:', error);
-      // Return mock data if API fails
+      // Return mock data if API fails - using realistic voltage range
       return {
         tick: 100,
-        total_voltage: 22500,
+        total_voltage: 220,
         total_load: 875,
         timestamp: new Date().toISOString()
       };
@@ -57,7 +57,7 @@ export const gridService = {
   // Run simulation with parameters
   runSimulation: async (params) => {
     try {
-      const response = await api.post('/simulate', params);
+      const response = await api.post('/api/grid/simulate', params);
       return response.data;
     } catch (error) {
       console.error('Error running simulation:', error);
@@ -68,7 +68,7 @@ export const gridService = {
   // Get forecast data
   getForecast: async () => {
     try {
-      const response = await api.get('/forecast');
+      const response = await api.get('/api/grid/forecast');
       return response.data;
     } catch (error) {
       console.error('Error fetching forecast:', error);
@@ -88,7 +88,7 @@ export const gridService = {
   // Get historical data for charts
   getHistoricalData: async (limit = 50) => {
     try {
-      const response = await api.get(`/historical-data?limit=${limit}`);
+      const response = await api.get(`/api/grid/historical-data?limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching historical data:', error);
@@ -97,7 +97,7 @@ export const gridService = {
       for (let i = 0; i < limit; i++) {
         mockData.push({
           tick: i,
-          total_voltage: 22000 + Math.random() * 2000,
+          total_voltage: 220 + Math.random() * 20,  // Use realistic 220V range
           total_load: 800 + Math.random() * 400,
           timestamp: new Date(Date.now() - (limit - i) * 60000).toISOString()
         });
@@ -109,7 +109,7 @@ export const gridService = {
   // Get system health metrics
   getHealth: async () => {
     try {
-      const response = await api.get('/system-health');
+      const response = await api.get('/api/grid/system-health');
       return response.data;
     } catch (error) {
       console.error('Error fetching system health:', error);
@@ -119,7 +119,7 @@ export const gridService = {
         total_records: 150,
         latest_tick: 149,
         averages: {
-          voltage: 22250,
+          voltage: 220,  // Updated to realistic voltage range
           load: 950
         },
         timestamp: new Date().toISOString()
@@ -135,7 +135,7 @@ export const gridService = {
   // Get model performance metrics
   getModelPerformance: async () => {
     try {
-      const response = await api.get('/model-performance');
+      const response = await api.get('/api/grid/model-performance');
       return response.data;
     } catch (error) {
       console.error('Error fetching model performance:', error);
@@ -171,41 +171,57 @@ export const gridService = {
   // Get voltage forecast (ARIMA-based)
   getVoltageForecast: async () => {
     try {
-      const response = await api.get('/voltage-forecast');
+      const response = await api.get('/api/grid/voltage-forecast');
       return response.data;
     } catch (error) {
       console.error('Error fetching voltage forecast:', error);
-      // Return mock forecast data if API fails
+      // Return mock forecast data if API fails - using realistic 220V range
       return {
-        current_voltage: 22500,
+        current_voltage: 220,
         forecast_timestamp: new Date().toISOString(),
         model_info: {
           aic: 850.5,
-          order: [1, 1, 1]
+          order: [1, 1, 1],
+          model_type: 'SARIMAX',
+          environmental_factors: 5
+        },
+        environmental_impact: {
+          temperature_effect: 'normal',
+          solar_contribution: 'medium',
+          wind_contribution: 'medium'
+        },
+        current_conditions: {
+          temperature: 25.0,
+          humidity: 50.0,
+          solar_intensity: 500.0,
+          wind_speed: 5.0,
+          peak_hours: 0.0
         },
         hourly_forecast: {
           data: Array.from({ length: 60 }, (_, i) => ({
             time: new Date(Date.now() + (i + 1) * 60000).toISOString(),
-            voltage: 22500 + Math.random() * 1000 - 500,
-            confidence_lower: 21500 + Math.random() * 1000 - 500,
-            confidence_upper: 23500 + Math.random() * 1000 - 500
+            voltage: 220 + Math.random() * 20 - 10,
+            confidence_lower: 210 + Math.random() * 20 - 10,
+            confidence_upper: 230 + Math.random() * 20 - 10
           })),
-          average: 22500,
+          average: 220,
           trend: 'stable',
-          min_voltage: 21800,
-          max_voltage: 23200
+          change_percent: 0.0,
+          min_voltage: 215,
+          max_voltage: 225
         },
         daily_forecast: {
           data: Array.from({ length: 24 }, (_, i) => ({
             time: new Date(Date.now() + (i + 1) * 3600000).toISOString(),
-            voltage: 22500 + Math.random() * 1500 - 750,
-            confidence_lower: 21000 + Math.random() * 1500 - 750,
-            confidence_upper: 24000 + Math.random() * 1500 - 750
+            voltage: 220 + Math.random() * 30 - 15,
+            confidence_lower: 200 + Math.random() * 30 - 15,
+            confidence_upper: 240 + Math.random() * 30 - 15
           })),
-          average: 22500,
+          average: 220,
           trend: 'stable',
-          min_voltage: 21500,
-          max_voltage: 23500
+          change_percent: 0.0,
+          min_voltage: 210,
+          max_voltage: 230
         }
       };
     }
@@ -214,23 +230,23 @@ export const gridService = {
   // Get forecast summary
   getForecastSummary: async () => {
     try {
-      const response = await api.get('/forecast-summary');
+      const response = await api.get('/api/grid/forecast-summary');
       return response.data;
     } catch (error) {
       console.error('Error fetching forecast summary:', error);
-      // Return mock summary data if API fails
+      // Return mock summary data if API fails - using realistic voltage range
       return {
-        current_voltage: 22500,
+        current_voltage: 220,
         forecast_timestamp: new Date().toISOString(),
         predictions: {
           next_hour: {
-            average_voltage: 22400,
-            change_percentage: -0.4,
+            average_voltage: 218,
+            change_percentage: -0.9,
             trend: 'decreasing'
           },
           next_day: {
-            average_voltage: 22300,
-            change_percentage: -0.9,
+            average_voltage: 215,
+            change_percentage: -2.3,
             trend: 'decreasing'
           }
         },
@@ -252,7 +268,7 @@ export const gridService = {
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await api.post('/upload-excel', formData, {
+      const response = await api.post('/api/grid/upload-excel', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -267,7 +283,7 @@ export const gridService = {
   // Export data as CSV
   exportData: async () => {
     try {
-      const response = await api.get('/export-data', {
+      const response = await api.get('/api/grid/export-data', {
         responseType: 'blob',
       });
       
@@ -292,7 +308,7 @@ export const gridService = {
   // Get data statistics
   getDataStatistics: async () => {
     try {
-      const response = await api.get('/data-statistics');
+      const response = await api.get('/api/grid/data-statistics');
       return response.data;
     } catch (error) {
       console.error('Error fetching data statistics:', error);
@@ -343,11 +359,11 @@ export const controlService = {
 
 export const zonesService = {
   list: async () => {
-    const { data } = await api.get('/zones');
+    const { data } = await api.get('/api/zones');
     return data;
   },
   summary: async () => {
-    const { data } = await api.get('/zones/summary');
+    const { data } = await api.get('/api/zones/summary');
     return data;
   }
 };

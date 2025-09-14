@@ -22,12 +22,17 @@ const Charts = ({ gridData, forecastData, historicalData, loading }) => {
 
   const voltage = gridData?.total_voltage || 0;
   const load = gridData?.total_load || 0;
-  const efficiency = voltage > 0 ? ((load / voltage) * 100).toFixed(1) : 0;
+  
+  // Scale voltage if it's in the old 22000V range
+  const scaledVoltage = voltage > 1000 ? voltage / 100 : voltage;
+  
+  // Calculate power efficiency (load utilization percentage)
+  const efficiency = scaledVoltage > 0 ? ((load / (scaledVoltage * 5)) * 100).toFixed(1) : 0; // Assuming 5A max current
 
-  // Generate hourly data for the last 24 hours
+  // Generate hourly data for the last 24 hours with realistic 220V variations
   const hourlyData = Array.from({ length: 24 }, (_, i) => ({
     hour: i,
-    voltage: Math.round(voltage * (0.9 + Math.random() * 0.2)),
+    voltage: Math.round(scaledVoltage + (Math.random() * 20 - 10)), // ±10V variation around 220V
     load: Math.round(load * (0.8 + Math.random() * 0.4)),
     efficiency: Math.round(80 + Math.random() * 20),
     time: `${i.toString().padStart(2, '0')}:00`,
@@ -42,7 +47,7 @@ const Charts = ({ gridData, forecastData, historicalData, loading }) => {
         <div className="chart-content">
           <div className="power-meter">
             <div className="meter-circle">
-              <div className="meter-value">{voltage.toLocaleString()}</div>
+              <div className="meter-value">{scaledVoltage.toLocaleString()}</div>
               <div className="meter-label">Volts</div>
             </div>
             <div className="meter-stats">

@@ -6,7 +6,7 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
   const [simulationParams, setSimulationParams] = useState({
     steps: 100,
     houses: 120,
-    voltage: 22500,
+    voltage: 220,  // Use realistic 220V instead of 22500V
     house_growth_rate: 0.05, // 5% default growth rate (decimal)
     temperature: 25.0,      // Default temperature in °C
     humidity: 50.0,        // Default humidity in %
@@ -92,8 +92,8 @@ const SimulationControls = ({ onRunSimulation, loading }) => {
               type="number"
               value={simulationParams.voltage}
               onChange={(e) => handleParamChange('voltage', e.target.value)}
-              min="20000"
-              max="25000"
+              min="200"
+              max="250"
               className="param-input"
             />
           </label>

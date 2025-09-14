@@ -44,21 +44,24 @@ const GridStatus = ({ gridData, loading }) => {
   const houses = null;
   const tick = gridData?.tick || 0;
 
+  // Scale voltage if it's in the old 22000V range
+  const scaledVoltage = voltage > 1000 ? voltage / 100 : voltage;
+
   // Generate sample detailed data for the table
   const detailedData = zonesPreview.length > 0
     ? zonesPreview.map((z, i) => ({
         id: z.id || i,
         zone: z.name,
         category: z.category,
-        voltage: z.latest?.voltage != null ? Math.round(z.latest.voltage) : Math.round(voltage * 0.25),
+        voltage: z.latest?.voltage != null ? Math.round(z.latest.voltage) : Math.round(scaledVoltage * 0.9 + (i * 10)), // Generate realistic variations around 220V
         load: z.latest?.load != null ? Math.round(z.latest.load) : Math.round(load * 0.25),
         status: (z.status || 'Active').charAt(0).toUpperCase() + (z.status || 'Active').slice(1),
       }))
     : [
-      { id: 1, zone: 'Faculty of Engineering', category: 'faculty', voltage: Math.round(voltage * 0.25), load: Math.round(load * 0.3), status: 'Active' },
-      { id: 2, zone: 'Administration', category: 'admin', voltage: Math.round(voltage * 0.22), load: Math.round(load * 0.25), status: 'Active' },
-      { id: 3, zone: 'Hostels', category: 'hostel', voltage: Math.round(voltage * 0.28), load: Math.round(load * 0.2), status: 'Active' },
-      { id: 4, zone: 'Library', category: 'library', voltage: Math.round(voltage * 0.25), load: Math.round(load * 0.25), status: 'Maintenance' },
+      { id: 1, zone: 'Faculty of Computing', category: 'faculty', voltage: Math.round(scaledVoltage * 0.95), load: Math.round(load * 0.3), status: 'Active' },
+      { id: 2, zone: 'Administration', category: 'admin', voltage: Math.round(scaledVoltage * 0.98), load: Math.round(load * 0.25), status: 'Active' },
+      { id: 3, zone: 'Hostels', category: 'hostel', voltage: Math.round(scaledVoltage * 1.02), load: Math.round(load * 0.2), status: 'Active' },
+      { id: 4, zone: 'Library', category: 'library', voltage: Math.round(scaledVoltage * 0.97), load: Math.round(load * 0.25), status: 'Maintenance' },
     ];
 
   return (
@@ -67,7 +70,7 @@ const GridStatus = ({ gridData, loading }) => {
         <div className="grid-status-card">
           <div className="card-icon voltage">⚡</div>
           <div className="card-content">
-            <div className="card-value">{voltage.toLocaleString()}</div>
+            <div className="card-value">{scaledVoltage.toLocaleString()}</div>
             <div className="card-label">Total Voltage (V)</div>
           </div>
         </div>

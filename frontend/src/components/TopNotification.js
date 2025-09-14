@@ -8,7 +8,7 @@ export default function TopNotification() {
 
   const loadHealth = async () => {
     try {
-  const { data } = await api.get('/system-health');
+  const { data } = await api.get('/api/grid/system-health');
   setHealth(data);
     } catch (e) {
       // ignore

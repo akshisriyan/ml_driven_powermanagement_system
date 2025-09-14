@@ -35,7 +35,14 @@ const VoltageForecast = ({ loading }) => {
   };
 
   const formatVoltage = (voltage) => {
-    return `${(voltage / 1000).toFixed(1)}kV`;
+    // Backend now returns voltage in proper 220V range
+    if (voltage > 1000) {
+      // Legacy support: if we get old-style high values (22000V), divide by 1000  
+      return `${(voltage / 1000).toFixed(1)}kV`;
+    } else {
+      // New format: voltage is already in proper range (220V), display as V
+      return `${voltage.toFixed(0)}V`;
+    }
   };
 
   const formatTime = (timeString) => {

@@ -15,9 +15,9 @@ app.add_middleware(
 
 # Routers
 app.include_router(auth.router)
-app.include_router(grid.router)
+app.include_router(grid.router, prefix="/api/grid")
 app.include_router(billing.router)
-app.include_router(zones.router)
+app.include_router(zones.router, prefix="/api")
 app.include_router(control.router)
 
 @app.get("/")
