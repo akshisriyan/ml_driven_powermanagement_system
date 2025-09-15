@@ -76,25 +76,21 @@ function SystemHealth() {
             const response = await gridService.getSystemHealth();
             let data = response.data || response;
             
-            // Apply voltage scaling if needed
-            if (data.voltage > 1000) {
-                data.voltage = data.voltage / 100;
-            }
+            // Map backend data to frontend format
+            const mappedData = {
+                status: data.status || 'Normal',
+                voltage: data.voltage || 220,
+                temperature: data.temperature || 25,
+                load: data.load || 85,
+                generatorEnabled: data.generatorEnabled || (data.generator && data.generator.enabled) || false,
+                efficiency: data.efficiency || 95,
+                lastUpdate: data.lastUpdate || new Date().toLocaleString()
+            };
             
-            // Get generator status
-            try {
-                const generatorResponse = await fetch('http://localhost:5000/api/grid/generator/status');
-                const generatorData = await generatorResponse.json();
-                data.generatorEnabled = generatorData.generator_enabled || false;
-            } catch (error) {
-                console.log('Generator status not available:', error);
-                data.generatorEnabled = false;
-            }
-            
-            setSystemData(data);
+            setSystemData(mappedData);
             
             // Check for system imbalances and generate notifications
-            const newNotifications = checkSystemHealth(data);
+            const newNotifications = checkSystemHealth(mappedData);
             if (newNotifications.length > 0) {
                 setNotifications(prev => [...newNotifications, ...prev.slice(0, 4)]); // Keep last 5 notifications
             }

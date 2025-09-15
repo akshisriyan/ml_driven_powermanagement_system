@@ -119,6 +119,48 @@ def get_system_health():
         except Exception:
             generator_enabled = False
 
+        # Calculate temperature based on load, time of day, and last simulation parameters
+        import datetime
+        current_hour = datetime.datetime.now().hour
+        base_temp = 25.0
+        
+        # Try to get last simulation temperature from settings
+        try:
+            sconn = sqlite3.connect(get_database_path())
+            scur = sconn.cursor()
+            scur.execute("SELECT value FROM settings WHERE key='last_simulation_temperature'")
+            temp_row = scur.fetchone()
+            if temp_row:
+                base_temp = float(temp_row[0])
+            sconn.close()
+        except Exception:
+            pass
+        
+        # Simulate temperature variation based on load and time of day
+        load_impact = (avg_load / 1000) * 3  # Higher load increases temperature
+        time_impact = 3 * np.sin((current_hour - 6) * np.pi / 12) if 6 <= current_hour <= 18 else -2
+        temperature = base_temp + load_impact + time_impact + np.random.normal(0, 1.5)  # Add some variation
+        temperature = max(15, min(45, temperature))  # Clamp between 15-45°C
+        
+        # Calculate efficiency based on voltage stability, load, and temperature
+        voltage_efficiency = 100 - abs(220 - avg_voltage) * 0.8  # Penalty for voltage deviation
+        load_efficiency = 100 - max(0, (avg_load - 800) * 0.03)  # Penalty for high load
+        temp_efficiency = 100 - max(0, (temperature - 35) * 2)  # Penalty for high temperature
+        overall_efficiency = min(100, max(60, (voltage_efficiency + load_efficiency + temp_efficiency) / 3))
+        
+        # Convert load to percentage (assuming max load around 1500)
+        load_percentage = min(100, (avg_load / 1500) * 100)
+
+        # Determine system status based on multiple factors
+        status = "healthy"
+        if avg_voltage < 200 or avg_load > 1200 or temperature > 35:
+            status = "warning"
+        if avg_voltage < 180 or avg_load > 1500 or temperature > 40:
+            status = "critical"
+        
+        # Convert load to percentage (assuming max load around 1500)
+        load_percentage = min(100, (avg_load / 1500) * 100)
+
         # Recommend action
         recommended_action = None
         if status in ("warning", "critical") and not generator_enabled:
@@ -126,10 +168,16 @@ def get_system_health():
 
         return {
             "status": status,
+            "voltage": float(avg_voltage),
+            "temperature": float(round(temperature, 1)),
+            "load": float(round(load_percentage, 1)),
+            "generatorEnabled": generator_enabled,
+            "efficiency": float(round(overall_efficiency, 1)),
+            "lastUpdate": pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
             "total_records": int(total_count),
             "latest_tick": int(latest_df['tick'].iloc[0]),
             "averages": {
-                "voltage": float(avg_voltage),  # Return scaled voltage
+                "voltage": float(avg_voltage),
                 "load": float(avg_df['avg_load'].iloc[0])
             },
             "timestamp": pd.Timestamp.now().isoformat(),
@@ -200,6 +248,20 @@ def run_simulation(params: GridParams):
             # If NetLogo not available, call synthetic generator directly with env params
             from ..utils.netlogo import generate_synthetic_data
             generate_synthetic_data(env_params=env)
+        
+        # Store simulation parameters for system health calculations
+        try:
+            sconn = sqlite3.connect(get_database_path())
+            scur = sconn.cursor()
+            scur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_simulation_temperature', ?)", (str(params.temperature),))
+            scur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_simulation_humidity', ?)", (str(params.humidity),))
+            scur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_simulation_solar', ?)", (str(params.solar_intensity),))
+            scur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_simulation_wind', ?)", (str(params.wind_speed),))
+            sconn.commit()
+            sconn.close()
+        except Exception as e:
+            print(f"Error storing simulation parameters: {e}")
+            pass
         # Backfill zone metrics from recent grid data
         try:
             backfill_zone_metrics_for_recent(50)
