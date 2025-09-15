@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authService } from '../services/api';
 
 const Login = ({ onAuth }) => {
@@ -6,6 +6,61 @@ const Login = ({ onAuth }) => {
 	const [form, setForm] = useState({ username: '', email: '', password: '', role: 'client' });
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+	const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+
+	// Load background image dynamically
+	useEffect(() => {
+		console.log('Attempting to load power plant image...');
+		const imageUrls = [
+			'/power-plant-bg.png',
+			'/Generated%20Image%20September%2015,%202025%20-%202_43PM.png'
+		];
+		
+		let currentIndex = 0;
+		
+		const tryLoadImage = () => {
+			if (currentIndex >= imageUrls.length) {
+				// All images failed, use fallback
+				console.log('All images failed to load, using beautiful fallback background');
+				setBackgroundLoaded(false);
+				return;
+			}
+			
+			const imageUrl = imageUrls[currentIndex];
+			const img = new Image();
+			
+			img.onload = () => {
+				console.log(`Power plant image loaded successfully from: ${imageUrl}`);
+				// Directly set the background on the element
+				const loginWrapper = document.querySelector('.login-wrapper');
+				console.log('Login wrapper element found:', loginWrapper);
+				if (loginWrapper) {
+					loginWrapper.style.setProperty('background', 'none', 'important'); // Clear first
+					loginWrapper.style.setProperty('background-color', 'transparent', 'important');
+					loginWrapper.style.setProperty('background-image', `url(${imageUrl})`, 'important');
+					loginWrapper.style.setProperty('background-size', 'cover', 'important');
+					loginWrapper.style.setProperty('background-position', 'center', 'important');
+					loginWrapper.style.setProperty('background-repeat', 'no-repeat', 'important');
+					loginWrapper.style.setProperty('background-attachment', 'fixed', 'important');
+					console.log('Background applied directly to element');
+					console.log('Element background image style:', loginWrapper.style.backgroundImage);
+				} else {
+					console.log('Login wrapper element not found!');
+				}
+				setBackgroundLoaded(true);
+			};
+			
+			img.onerror = (e) => {
+				console.log(`Failed to load image: ${imageUrl}`, e);
+				currentIndex++;
+				tryLoadImage();
+			};
+			
+			img.src = imageUrl;
+		};
+		
+		tryLoadImage();
+	}, []);
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
@@ -40,7 +95,9 @@ const Login = ({ onAuth }) => {
 	};
 
 	return (
-		<div className="login-wrapper">
+		<div 
+			className="login-wrapper"
+		>
 			<div className="login-panel">
 				<h2>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
 				<div className="login-subtitle">ML Power Grid Dashboard</div>

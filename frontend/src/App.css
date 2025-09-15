@@ -89,10 +89,93 @@ body {
 .link-like:hover {background: var(--pg-accent-light); color: var(--pg-accent-blue);} 
 
 /* Login */
-.login-wrapper {min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(circle at 30% 30%,#1e3a8a,#0f172a);} 
-.login-panel {width:100%;max-width:400px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);padding:2rem 2.25rem;border-radius:24px;border:1px solid rgba(255,255,255,0.15);box-shadow:0 10px 40px -10px rgba(0,0,0,0.6);} 
-.login-panel h2 {margin-bottom:0.25rem;font-size:1.75rem;background:linear-gradient(90deg,#00ffff,#ff1493);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.login-subtitle {font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;margin-bottom:1.25rem;font-weight:600;}
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-attachment: fixed;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Force power plant image background - override all other styles */
+.login-wrapper-power-plant {
+  background-image: var(--bg-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  background-color: transparent !important;
+}
+
+/* Login with power plant background - removed gradients */
+.login-wrapper-with-bg {
+  background: transparent !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Power Plant Industrial Theme Effects - Simplified for clean image display */
+.login-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0; /* Hide overlay effects to show pure image */
+}
+
+.login-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0; /* Hide overlay effects to show pure image */
+}
+
+.login-panel {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(25px);
+  padding: 2.5rem 2.75rem;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.8), 
+              0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+              0 0 50px rgba(59, 130, 246, 0.1);
+  position: relative;
+  z-index: 10;
+} 
+.login-panel h2 {
+  margin-bottom: 0.25rem;
+  font-size: 1.85rem;
+  background: linear-gradient(135deg, #00ffff, #ff1493, #ffd700);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+  font-weight: 700;
+}
+.login-subtitle {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: #00ffff;
+  text-shadow: 0 1px 5px rgba(0, 255, 255, 0.4);
+}
 .auth-form {display:flex;flex-direction:column;gap:1rem;}
 .form-row {display:flex;flex-direction:column;gap:0.4rem;}
 .form-row label {font-size:0.75rem;letter-spacing:0.05em;text-transform:uppercase;opacity:0.75;font-weight:600;}
@@ -2466,7 +2549,12 @@ table, th, td { border-color: var(--pg-border) !important; }
 .footer.light a { color:#1e3a8a; }
 
 /* Login Light */
-.login-wrapper { background: linear-gradient(135deg,#e0f2fe,#dcfce7) !important; }
+.login-wrapper { 
+  background: 
+    linear-gradient(rgba(224, 242, 254, 0.85), rgba(220, 252, 231, 0.85)),
+    url('./powerplant-bg.jpg') center/cover no-repeat !important;
+  background-attachment: fixed !important;
+}
 .login-panel { background:#ffffff !important; border:1px solid var(--pg-border); box-shadow:0 12px 32px -8px rgba(15,23,42,0.15); color:var(--pg-text); }
 .login-panel h2 { background:none; -webkit-text-fill-color:inherit; color:var(--pg-text); }
 .form-row input, .form-row select { background:#f4f9fb !important; border:1px solid var(--pg-border) !important; color:var(--pg-text) !important; }

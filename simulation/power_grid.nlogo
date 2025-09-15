@@ -9,7 +9,7 @@ houses-own [voltage load]
 
 to setup
   clear-all
-set house-growth-rate 0.05
+set house-growth-rate 1.0
   create-houses 100 [
     setxy random-xcor random-ycor
     set voltage random-float 240
